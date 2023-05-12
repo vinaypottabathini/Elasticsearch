@@ -1,0 +1,4420 @@
+# Click the Variables button, above, to create your own variables.
+GET ${exampleVariable1} // _search
+{
+  "query": {
+    "${exampleVariable2}": {} // match_all
+  }
+}
+
+
+PUT test/_doc/1
+{"name":"Paul", "age":35}
+
+
+GET test/_mapping
+
+GET test
+
+PUT test
+
+PUT test/_mapping
+{
+  "properties" : {
+    "id" : {"type" : "keyword"},
+    "date" : {"type" : "date"},
+    "customer_id" : {"type" : "keyword"},
+    "sent" : {"type" : "boolean"},
+    "name" : {"type" : "keyword"},
+    "quantity" : {"type" : "integer"},
+    "vat" : {"type" : "double", "index":"false"}
+  }
+}
+
+GET my-index-000001
+
+DELETE my-index-000001
+
+
+PUT my-index-000001
+{
+  "mappings": {
+    "date_detection": false
+  }
+}
+
+PUT my-index-000001/_doc/1 
+{
+  "create_date": "2015/09/02"
+}
+
+
+PUT my-index-000001
+{
+  "mappings": {
+    "numeric_detection": true
+  }
+}
+
+
+PUT my-index-000001/_doc/1
+{
+  "my_float":   "1.0", 
+  "my_integer": "1" 
+}
+
+
+
+
+PUT dynamic_temp
+{
+  "mappings": {
+    "dynamic_templates": [ 
+      
+      {
+        "string_as_ip":{
+          "match_mapping_type": "string",
+          "match": "ip*",
+          "runtime":{
+            "type": "ip"
+          }
+        }
+      
+      }
+    
+    ]
+  }
+}
+
+
+PUT dynamic_temp/_doc/1
+{
+  "ip_one": "Hello"
+}
+
+PUT dynamic_temp/_doc/3
+{
+  "ip_two": 12345
+}
+
+PUT dynamic_temp/_doc/2
+{
+  "not_one": "World"
+}
+
+
+
+GET dynamic_temp/_mapping
+
+DELETE dynamic_temp
+
+
+PUT dynamic_temp
+{
+  "mappings":{
+    
+    "dynamic_templates":[
+        {
+          "integers":{
+            
+            "match_mapping_type": "long",
+            "mapping":{
+              "type": "integer"
+            }
+            
+          }
+          
+        },
+        
+        {
+          "strings":{
+            "match_mapping_type": "string",
+            "mapping":{
+              
+              "type": "text",
+              "fields": {
+                "raw":{
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+              
+              
+            }
+          }
+          
+        }
+      
+      ]
+    
+  }
+  
+}
+
+
+
+PUT dynamic_temp/_doc/1
+{
+  "mint": 12345678,
+  "mstr": "some string"
+}
+
+GET dynamic_temp/_mapping
+
+DELETE dynamic_temp
+
+
+PUT dynamic_temp
+{
+  "mappings":{
+        
+    "dynamic_templates":[
+        {
+            "long_to_strings" :{
+              
+              "match_mapping_type":"long",
+              "match": "first",
+              
+              "path_match": "name.*",
+              "path_unmatch": "*.middle",
+              
+              "mapping":{
+                "type": "text",
+                "copy_to": "full_name",
+                "fields":{
+                  "raw": {
+                    "type": "keyword"
+                  }
+                }
+                
+              }
+              
+              
+              
+            }
+        }
+      
+      ]
+
+    
+  }
+  
+}
+
+PUT dynamic_temp/_doc/1
+{
+  
+  "name":{
+    "first": 1234,
+    "last": 5678,
+    "middle": 9000
+    
+  }
+  
+}
+
+
+
+PUT dynamic_temp/_doc/1
+{
+  "first": 55555,
+  "name": {
+    "first":  12345,
+    "last":   56784,
+    "middle": 9000,
+    "title": {
+      "value": "Sir",
+      "category": "order of chivalry"
+    }
+  }
+}
+
+GET dynamic_temp/_mapping
+
+GET dynamic_temp/_search
+
+
+GET dynamic_temp/_mapping
+
+
+
+
+#Template Variables
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "mappings": {
+    "dynamic_templates": [
+      {
+        "named_analyzers": {
+          "match_mapping_type": "string",
+          "match": "*",
+          "mapping": {
+            "type": "text",
+            "analyzer": "{name}"
+          }
+        }
+      },
+      {
+        "no_doc_values": {
+          "match_mapping_type":"*",
+          "mapping": {
+            "type": "{dynamic_type}",
+            "doc_values": false
+          }
+        }
+      }
+    ]
+  }
+}
+
+PUT my-index-000001/_doc/1
+{
+  "english": "Some English text", 
+  "count":   5 
+}
+
+GET my-index-000001/_mapping
+
+
+
+
+####
+DELETE temp_vars
+
+PUT temp_vars
+{
+  "mappings": {
+    "dynamic_templates": [
+      {
+        "named_analyzers":{
+          
+          "match_mapping_type": "string",
+          "match": "*",
+          "mapping": {
+            
+            "type": "text",
+            "analyzer": "standard",
+            "fields":{
+              "raw":{
+                
+                "type": "text",
+                "analyzer": "{name}"
+                
+              }
+              
+            }
+            
+          }
+          
+        }
+      },
+      
+      {
+        "no_doc_values":{
+          
+          "match_mapping_type": "*",
+          "mapping":{
+            
+            "type": "{dynamic_type}",
+            "doc_values": false
+          }
+          
+          
+        }
+      }
+    ]
+ 
+  }
+  
+}
+
+PUT temp_vars/_doc/1
+{
+  "english": "Some English text", 
+  "count":   5 
+}
+
+
+GET temp_vars/_mapping
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "mappings": {
+    "dynamic_templates": [
+      {
+        "strings_as_keywords": {
+          "match_mapping_type": "string",
+          "runtime": {}
+        }
+      }
+    ]
+  }
+}
+
+PUT my-index-000001/_doc/1
+{
+  "english": "Some English text",
+  "count":   5
+}
+
+
+GET my-index-000001/_mapping
+
+GET dynamic_temp/_mapping
+
+GET dynamic_temp/_mapping/field/first
+
+
+
+PUT runtime_map/
+{
+  "mappings": {
+    
+    "runtime":{
+      "day_of_week":{
+        
+        "type": "keyword",
+        "script": "emit(doc['@timestamp'].value.dayOfWeekEnum.getDisplayName(TextStyle.FULL, Locale.ROOT))"
+        
+      }
+    },
+     "properties":{
+    "@timestamp": {
+      "type": "date"
+    }
+  }
+  
+  
+  }
+  
+ 
+  
+  
+}
+
+
+PUT runt_idx/_bulk?refresh=true
+{"index":{}}
+{"@timestamp":1516729294000,"model_number":"QVKC92Q","measures":{"voltage":"5.2","start": "300","end":"8675309"}}
+{"index":{}}
+{"@timestamp":1516642894000,"model_number":"QVKC92Q","measures":{"voltage":"5.8","start": "300","end":"8675309"}}
+{"index":{}}
+{"@timestamp":1516556494000,"model_number":"QVKC92Q","measures":{"voltage":"5.1","start": "300","end":"8675309"}}
+{"index":{}}
+{"@timestamp":1516470094000,"model_number":"QVKC92Q","measures":{"voltage":"5.6","start": "300","end":"8675309"}}
+{"index":{}}
+{"@timestamp":1516383694000,"model_number":"HG537PU","measures":{"voltage":"4.2","start": "400","end":"8625309"}}
+{"index":{}}
+{"@timestamp":1516297294000,"model_number":"HG537PU","measures":{"voltage":"4.0","start": "400","end":"8625309"}}
+
+
+
+GET runt_idx/_search
+
+GET runt_idx/_mapping
+
+PUT runt_idx/_mapping
+{
+  "runtime":{
+    
+    
+    "measures.start":{
+      "type": "long"
+    },
+     "measures.end":{
+      "type": "long"
+    }
+    
+    
+    
+  }
+  
+  
+}
+
+
+GET runt_idx/_search
+{
+  "aggs":{
+    
+    "avg_ms_starts":{
+      "avg":{
+        "field": "measures.start"
+      }
+      
+  },
+  
+  "avg_ms_ends":{
+      "avg":{
+        "field": "measures.end"
+      }
+      
+    }
+  
+}
+
+}
+
+
+
+GET runt_idx/_search
+{
+  "runtime_mappings": {
+    "duration": {
+      "type": "long",
+      "script": {
+        "source": """
+          emit(doc['measures.end'].value - doc['measures.start'].value );
+        """
+        
+      }
+    }
+  },
+  
+  "aggs":{
+    
+    "duration_stats":{
+      "stats":{
+        "field": "duration"
+      }
+    }
+    
+  }
+  
+  
+}
+
+DELETE runt_idx
+
+POST runt_idx/_bulk?refresh=true
+{"index":{}}
+{"@timestamp":1516729294000,"model_number":"QVKC92Q","measures":{"voltage":5.2}}
+{"index":{}}
+{"@timestamp":1516642894000,"model_number":"QVKC92Q","measures":{"voltage":5.8}}
+{"index":{}}
+{"@timestamp":1516556494000,"model_number":"QVKC92Q","measures":{"voltage":5.1}}
+{"index":{}}
+{"@timestamp":1516470094000,"model_number":"QVKC92Q","measures":{"voltage":5.6}}
+{"index":{}}
+{"@timestamp":1516383694000,"model_number":"HG537PU","measures":{"voltage":4.2}}
+{"index":{}}
+{"@timestamp":1516297294000,"model_number":"HG537PU","measures":{"voltage":4.0}}
+
+
+
+POST runt_idx/_search
+{
+  
+  "runtime_mappings": {
+    "measures.voltage": {
+      "type": "double",
+      "script": {
+        "source": 
+        """if (doc['model_number.keyword'].value.equals('HG537PU'))
+          { emit(1.7 * params._source['measures']['voltage']); }
+          else{emit(params._source['measures']['voltage']);}
+        """
+      }
+    }
+  }, 
+  
+  "query": {
+    "match": {
+      "model_number": "HG537PU"
+    }
+  },
+  "fields": ["measures.voltage"]
+  
+}
+
+
+
+
+
+PUT runt_idx/
+{
+  "mappings":{
+    
+    "dynamic": "runtime",
+    "runtime":{
+      
+      "day_of_week":{
+        
+        "type": "keyword",
+        "script": {
+          "source": 
+          """
+          emit(doc['@timestamp'].value.dayOfWeekEnum.getDisplayName(TextStyle.FULL, Locale.ROOT))
+          """
+        }
+        
+      }
+    },
+     "properties": {
+       "@timestamp": {"type": "date"}
+     }
+  }
+  
+ 
+  
+  
+  
+}
+
+
+
+
+POST /runt_idx/_bulk?refresh
+{ "index": {}}
+{ "@timestamp": "2020-06-21T15:00:01-05:00", "message" : "211.11.9.0 - - [2020-06-21T15:00:01-05:00] \"GET /english/index.html HTTP/1.0\" 304 0"}
+{ "index": {}}
+{ "@timestamp": "2020-06-21T15:00:01-05:00", "message" : "211.11.9.0 - - [2020-06-21T15:00:01-05:00] \"GET /english/index.html HTTP/1.0\" 304 0"}
+{ "index": {}}
+{ "@timestamp": "2020-04-30T14:30:17-05:00", "message" : "40.135.0.0 - - [2020-04-30T14:30:17-05:00] \"GET /images/hm_bg.jpg HTTP/1.0\" 200 24736"}
+{ "index": {}}
+{ "@timestamp": "2020-04-30T14:30:53-05:00", "message" : "232.0.0.0 - - [2020-04-30T14:30:53-05:00] \"GET /images/hm_bg.jpg HTTP/1.0\" 200 24736"}
+{ "index": {}}
+{ "@timestamp": "2020-04-30T14:31:12-05:00", "message" : "26.1.0.0 - - [2020-04-30T14:31:12-05:00] \"GET /images/hm_bg.jpg HTTP/1.0\" 200 24736"}
+{ "index": {}}
+{ "@timestamp": "2020-04-30T14:31:19-05:00", "message" : "247.37.0.0 - - [2020-04-30T14:31:19-05:00] \"GET /french/splash_inet.html HTTP/1.0\" 200 3781"}
+{ "index": {}}
+{ "@timestamp": "2020-04-30T14:31:27-05:00", "message" : "252.0.0.0 - - [2020-04-30T14:31:27-05:00] \"GET /images/hm_bg.jpg HTTP/1.0\" 200 24736"}
+{ "index": {}}
+{ "@timestamp": "2020-04-30T14:31:29-05:00", "message" : "247.37.0.0 - - [2020-04-30T14:31:29-05:00] \"GET /images/hm_brdl.gif HTTP/1.0\" 304 0"}
+{ "index": {}}
+{ "@timestamp": "2020-04-30T14:31:29-05:00", "message" : "247.37.0.0 - - [2020-04-30T14:31:29-05:00] \"GET /images/hm_arw.gif HTTP/1.0\" 304 0"}
+{ "index": {}}
+{ "@timestamp": "2020-04-30T14:31:32-05:00", "message" : "247.37.0.0 - - [2020-04-30T14:31:32-05:00] \"GET /images/nav_bg_top.gif HTTP/1.0\" 200 929"}
+{ "index": {}}
+{ "@timestamp": "2020-04-30T14:31:43-05:00", "message" : "247.37.0.0 - - [2020-04-30T14:31:43-05:00] \"GET /french/images/nav_venue_off.gif HTTP/1.0\" 304 0"}
+
+
+
+GET runt_idx/_search
+{ 
+  "fields": ["@timestamp", "day_of_week"],
+  "_source": false
+}
+
+
+
+
+PUT runt_idx/_mapping
+{
+  "runtime":{
+    
+    
+    "client_ip":{
+      "type": "ip",
+      "script":{
+        "source":"String m = doc['message'].value; int end = m.indexOf(\" \");emit(m.substring(0, end));"
+      }
+    }
+  }
+  
+  
+  
+}
+
+
+PUT /runt_idx/_mapping
+{
+  "runtime": {
+    "client_ip": {
+      "type": "ip",
+      "script" : {
+      "source" : "String m = doc[\"message\"].value; int end = m.indexOf(\" \"); emit(m.substring(0, end));"
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+GET runt_idx/_search
+{
+  "size": 1,
+  "query":{
+    
+    "match": {
+      
+      "client_ip": "211.11.9.0"
+      
+    }
+    
+   
+    
+  },
+   "fields": ["*"]
+  
+}
+
+
+
+
+
+
+
+POST ip_location/_doc?refresh
+{
+  
+  "ip": "192.168.1.1",
+   "country": "Canada",
+  "city": "Montreal"
+  
+}
+
+
+GET ip_location/_mapping
+
+
+PUT logs/_doc/1?refresh
+{
+  "host": "192.168.1.1",
+  "message": "the first message"
+}
+
+PUT logs/_doc/2?refresh
+{
+  "host": "192.168.1.2",
+  "message": "the second message"
+}
+
+
+
+POST logs/_search
+{
+  
+  "runtime_mappings": {
+    "location": {
+      "type": "lookup",
+        "target_index": "ip_location",
+        "input_field": "host",
+        "target_field": "ip",
+        "fetch_fields": ["country", "city"]
+    }
+  },
+  "fields": ["host", "message", "location"]
+  
+}
+
+DELETE runt_idx
+
+PUT runt_idx/
+{
+  "mappings": {
+    "properties": {
+      "timestamp": {
+        "type": "date"
+      },
+      "temperature": {
+        "type": "long"
+      },
+      "voltage": {
+        "type": "double"
+      },
+      "node": {
+        "type": "keyword"
+      },
+      "voltage_corrected": {
+        "type": "double",
+        "on_script_error": "fail", 
+        "script": {
+          "source": """
+        emit(doc['voltage'].value * params['multiplier'])
+        """,
+          "params": {
+            "multiplier": 4
+          }
+        }
+      }
+    }
+  }
+}
+
+
+POST runt_idx/_bulk?refresh=true
+{ "index": {}}
+{ "timestamp": 1516729294000, "temperature": 200, "voltage": 5.2, "node": "a"}
+{ "index": {}}
+{ "timestamp": 1516642894000, "temperature": 201, "voltage": 5.8, "node": "b"}
+{ "index": {}}
+{ "timestamp": 1516556494000, "temperature": 202, "voltage": 5.1, "node": "a"}
+{ "index": {}}
+{ "timestamp": 1516470094000, "temperature": 198, "voltage": 5.6, "node": "b"}
+{ "index": {}}
+{ "timestamp": 1516383694000, "temperature": 200, "voltage": 4.2, "node": "c"}
+{ "index": {}}
+{ "timestamp": 1516297294000, "temperature": 202, "voltage": 4.0, "node": "c"}
+
+DELETE runt_idx
+
+POST runt_idx/_search
+{
+  "query":{
+    "range": {
+      "voltage_corrected": {
+        "gte": 10,
+        "lte": 16,
+        "boost": 1.0
+      }
+    }
+  },
+  "fields": ["voltage_corrected", "voltage"],
+  "_source": false
+}
+
+
+
+PUT runt_idx
+{
+  "mappings": {
+    "properties": {
+      "@timestamp":{
+        "type": "date",
+        "format": "strict_date_optional_time|| epoch_second"
+      },
+      "message":{
+        "type": "wildcard"
+      }
+    }
+  }
+}
+
+
+POST /runt_idx/_bulk?refresh
+{"index":{}}
+{"timestamp":"2020-04-30T14:30:17-05:00","message":"40.135.0.0 - - [30/Apr/2020:14:30:17 -0500] \"GET /images/hm_bg.jpg HTTP/1.0\" 200 24736"}
+{"index":{}}
+{"timestamp":"2020-04-30T14:30:53-05:00","message":"232.0.0.0 - - [30/Apr/2020:14:30:53 -0500] \"GET /images/hm_bg.jpg HTTP/1.0\" 200 24736"}
+{"index":{}}
+{"timestamp":"2020-04-30T14:31:12-05:00","message":"26.1.0.0 - - [30/Apr/2020:14:31:12 -0500] \"GET /images/hm_bg.jpg HTTP/1.0\" 200 24736"}
+{"index":{}}
+{"timestamp":"2020-04-30T14:31:19-05:00","message":"247.37.0.0 - - [30/Apr/2020:14:31:19 -0500] \"GET /french/splash_inet.html HTTP/1.0\" 200 3781"}
+{"index":{}}
+{"timestamp":"2020-04-30T14:31:22-05:00","message":"247.37.0.0 - - [30/Apr/2020:14:31:22 -0500] \"GET /images/hm_nbg.jpg HTTP/1.0\" 304 0"}
+{"index":{}}
+{"timestamp":"2020-04-30T14:31:27-05:00","message":"252.0.0.0 - - [30/Apr/2020:14:31:27 -0500] \"GET /images/hm_bg.jpg HTTP/1.0\" 200 24736"}
+{"index":{}}
+{"timestamp":"2020-04-30T14:31:28-05:00","message":"not a valid apache log"}
+
+
+
+GET runt_idx
+
+
+
+PUT runt_idx/_mapping
+{
+  "runtime":{
+    
+    "http":{
+      "type": "composite",
+      "script": "emit(grok(\"%{COMMONAPACHELOG}\").extract(doc[\"message\"].value))",
+      "fields": {
+        "clientip":{
+          "type": "ip"
+        },
+        "verb":{
+          "type": "keyword"
+        },
+        "response":{
+          "type": "long"
+        }
+      }
+    }
+  }
+  
+  
+}
+
+GET runt_idx/_search
+{
+  "query": {
+    "match": {
+      "http.clientip": "40.135.0.0"
+    }
+  },
+  "fields" : ["*"]
+}
+
+
+PUT trips 
+{
+  "mappings": {
+    "properties": {
+      "distance": {
+        "type": "long"
+      },
+      "route_length_miles":{
+        "type": "alias",
+        "path": "distance"
+      },
+      
+      "transmit_mode":{
+        "type": "keyword"
+      }
+    }
+  }
+  
+  
+}
+
+PUT trips/_mapping
+{
+    "properties": {
+      "second_name":{
+        "type": "nested",
+        "properties": {
+          "first":{
+            "type": "text"
+          },
+           "last":{
+            "type": "text"
+          }
+        }
+      }
+    }
+  
+}
+
+
+PUT trips/_mapping
+{
+    "properties": {
+      
+      "second_name": {
+          "type": "nested",
+          "properties": {
+            "first": {
+              "type": "text"
+            },
+            "last": {
+              "type": "text"
+            },
+            
+            "nfirst_alias":{
+              "type": "alias",
+              "path": "second_name.first"
+            }
+            
+            
+          }
+        }
+      
+      
+      
+      
+    }
+  
+}
+
+
+
+PUT trips/_mapping
+{
+    "properties": {
+      
+      "second_name": {
+        "type": "nested",
+        "properties":{
+            "nlast_alias":{
+                  "type": "alias",
+                  "path": "second_name.last"
+                }
+          
+        }
+      }
+      
+    }
+  
+}
+        
+        
+        
+
+GET trips/_mapping
+
+PUT trips/_bulk
+{"index": {}}
+{"distance": 5}
+{"index": {}}
+{"distance": 10}
+{"index": {}}
+{"distance": 15}
+{"index": {}}
+{"distance": 20}
+{"index": {}}
+{"distance": 25}
+
+
+
+GET trips/_search
+
+
+GET trips/_search
+{
+  "query": {
+    "range": {
+      "route_length_miles": {
+        "gte": 10,
+        "lte": 20
+      }
+    }
+  }
+}
+
+GET trips/_field_caps?fields=rout*,transmit_mode
+
+
+
+GET trips/_search
+{
+  "query" : {
+    "match_all": {}
+  },
+  "_source": "route_length_miles"
+}
+
+
+
+PUT arr_test/_doc/1
+{
+  "message": "some arrays in this document...",
+  "tags":  [ "elasticsearch", "wow" ], 
+  "lists": [ 
+    {
+      "name": "prog_list",
+      "description": "programming list"
+    },
+    {
+      "name": "cool_list",
+      "description": "cool stuff list"
+    }
+  ]
+}
+
+PUT arr_test/_doc/2 
+{
+  "message": "no arrays in this document...",
+  "tags":  "elasticsearch",
+  "lists": {
+    "name": "prog_list",
+    "description": "programming list"
+  }
+}
+
+GET arr_test/_search
+
+GET arr_test/_search
+{
+  "query": {
+    "match": {
+      "tags": "elasticsearch" 
+    }
+  }
+}
+
+
+PUT binary
+{
+  "mappings": {
+    "properties": {
+      "name": {
+        "type": "text"
+      },
+      "blob": {
+        "type": "binary"
+      }
+    }
+  }
+}
+
+
+PUT binary/_doc/1
+{
+  "name": "Some binary blob",
+  "blob": "U29tZSBiaW5hcnkgYmxvYg==" 
+}
+
+GET binary/_search
+
+PUT boolean
+{
+  "mappings": {
+    "properties": {
+      "is_published": {
+        "type": "boolean"
+      }
+    }
+  }
+}
+
+POST boolean/_doc/1?refresh
+{
+  "is_published": true
+}
+
+POST boolean/_doc/2?refresh
+{
+  "is_published": false
+}
+
+
+GET boolean/_search
+{
+  
+  "aggs":{
+    
+    "publish_state":{
+      "terms":
+        {
+          "field": "is_published"
+        }
+    }
+    
+  },
+  "sort": ["is_published"],
+  "fields": [ "weight"
+      
+    ],
+  "runtime_mappings": {
+    "weight": {
+      "type": "long",
+      "script": "emit(doc['is_published'].value? 10: 0)"
+    }
+  }
+  
+  
+}
+
+DELETE bool_synth
+PUT bool_synth
+{
+  "mappings": {
+    "properties": {
+      "booln": { "type": "boolean" }
+    }
+  }
+}
+
+
+PUT bool_synth
+{
+  "mappings": {
+    "_source": { "mode": "synthetic" }, ### Sort values in Boolean Field 
+    "properties": {
+      "booln": { "type": "boolean" }
+    }
+  }
+}
+
+
+PUT bool_synth/_doc/1
+{
+  "booln": [true, false, true, false]
+}
+
+
+GET bool_synth/_search
+
+
+
+PUT google_search
+{
+  "mappings": {
+    "properties": {
+      "searchf": {
+        "type": "completion"
+      }
+    }
+  }
+}
+
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "date": {
+        "type": "date" 
+      }
+    }
+  }
+}
+
+PUT my-index-000001/_doc/1
+{ "date": "2015-01-01" } 
+
+PUT my-index-000001/_doc/2
+{ "date": "2015-01-01T12:10:30Z" } 
+
+PUT my-index-000001/_doc/3
+{ "date": 1420070400001 } 
+
+
+GET my-index-000001/_search
+{
+  "sort": { "date": "asc"} 
+}
+
+
+DELETE my-index-000001
+
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "date": {
+        "type": "date_nanos" 
+      }
+    }
+  }
+}
+
+PUT my-index-000001/_bulk?refresh
+{ "index" : { "_id" : "1" } }
+{ "date": "2015-01-01" } 
+{ "index" : { "_id" : "2" } }
+{ "date": "2015-01-01T12:10:30.123456789Z" } 
+{ "index" : { "_id" : "3" } }
+{ "date": 1420070400000 } 
+
+
+GET my-index-000001/_search
+{
+  "sort": {"date": "asc"},
+  "runtime_mappings": {
+    "date_has_nanos": {
+      "type": "boolean",
+      "script": "emit(doc['date'].value.nano!=0)"
+    }
+  },
+  "fields": [
+    {
+      "field": "date",
+      "format": "strict_date_optional_time_nanos"},
+    {"field": "date_has_nanos"}
+  ]
+  
+  
+}
+
+
+PUT bug_reports
+{
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text"
+      },
+      "labels": {
+        "type": "flattened"
+      }
+    }
+  }
+}
+
+PUT bug_reports/_doc/1
+{
+  "title": "Results are not sorted correctly.",
+  "labels": {
+    "priority": "urgent",
+    "release": ["v1.2.5", "v1.3.0"],
+    "timestamp": {
+      "created": 1541458026,
+      "closed": 1541457010
+    }
+  }
+}
+
+GET bug_reports/_search
+
+
+GET bug_reports/_search
+{
+  "query":{
+    "term": {
+      "labels.priority": "urgent"
+    }
+}  
+  
+}
+
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "flattened_field": {
+        "type": "flattened"
+      }
+    }
+  }
+}
+
+
+PUT my-index-000001/_doc/1?refresh=true
+{
+  "flattened_field" : {
+    "subfield" : "value"
+  }
+}
+
+
+POST my-index-000001/_search
+{
+  "fields": ["flattened_field.*"],
+  "_source": false
+}
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text"
+      },
+      "labels": {
+        "type": "flattened"
+      }
+    }
+  }
+}
+
+
+POST /my-index-000001/_bulk?refresh
+{"index":{}}
+{"title":"Something really urgent","labels":{"priority":"urgent","release":["v1.2.5","v1.3.0"],"timestamp":{"created":1541458026,"closed":1541457010}}}
+{"index":{}}
+{"title":"Somewhat less urgent","labels":{"priority":"high","release":["v1.3.0"],"timestamp":{"created":1541458026,"closed":1541457010}}}
+{"index":{}}
+{"title":"Not urgent","labels":{"priority":"low","release":["v1.2.0"],"timestamp":{"created":1541458026,"closed":1541457010}}}
+
+
+GET my-index-000001/_search
+{
+  "runtime_mappings": {
+    "release_check": {
+      "type": "boolean",
+      "script": {
+        "source": 
+        """if(doc['labels.release'].value.equals('v1.2.0'))
+          {emit(true);}else{emit(false)}
+          
+          """
+      }
+    }
+  },
+  "fields": [
+    {"field": "release_check"},
+    {"field": "labels.release"}
+    
+    ]
+}
+
+
+ 
+DELETE my-index-000001
+
+
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "location":{
+        "type": "geo_point"
+      }
+    }
+  }
+}
+
+
+POST my-index-000001/_doc
+{
+  "text": "Geopoint as an object using GeoJSON format",
+  "location": {
+    "type": "Point",
+    "coordinates": [-71.34, 41.12]
+  }
+}
+
+
+POST my-index-000001/_doc
+{
+  "text": "Geopoint as a WKT POINT primitive",
+  "location": "POINT(-71.34 41.12)"
+}
+
+
+
+POST my-index-000001/_doc
+{
+  "text": "Geopoint  as an object with 'lat' and 'lon' keys",
+  "location": {
+    "lat": 41.12,
+    "lon": -71.34
+  }
+}
+
+
+POST my-index-000001/_doc
+{
+  "text": "Geopoint as an array",
+  "location": [ -71.34, 41.12 ] 
+}
+
+POST my-index-000001/_doc
+{
+  "text": "Geopoint as a string",
+  "location": "41.12,-71.34" 
+}
+
+POST my-index-000001/_doc
+{
+  "text": "Geopoint as a geohash",
+  "location": "drm3btev3e86" 
+}
+
+
+
+GET my-index-000001/_search
+{
+  "query": {
+    "geo_bounding_box": {
+      "location": {
+        "top_left": {
+          "lat": 50,
+          "lon": -73
+        },
+        "bottom_right": {
+          "lat": 40,
+          "lon": -76
+        }
+      }
+    }
+  }
+}
+
+
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "ip_adr": {
+        "type": "ip"
+      }
+    }
+  }
+  
+}
+
+
+PUT my-index-000001/_doc/1
+{
+  "ip_adr": "192.168.1.1"
+}
+
+#    "dynamic": "strict",
+
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      
+      "my_id":{
+        "type": "keyword"
+      },
+      
+      "my_join_field":{
+        "type": "join",
+        "relations": {
+          "question": "answer"
+        }
+      }
+    }
+  }
+  
+}
+
+
+PUT my-index-000001/_doc/1?refresh
+{
+  "my_id": "1",
+  "text": "This is a question",
+  "my_join_field": "question"
+}
+
+
+GET my-index-000001/_mapping
+
+
+PUT my-index-000001/_doc/2?refresh
+{
+  "my_id": "2",
+  "text": "This is a question 2",
+  "my_join_field": {
+    "name": "question" 
+  }
+}
+
+PUT my-index-000001/_doc/3?routing=1&refresh 
+{
+  "my_id": "3",
+  "text": "This is an answer",
+  "my_join_field": {
+    "name": "answer", 
+    "parent": "1" 
+  }
+}
+
+PUT my-index-000001/_doc/4?routing=1&refresh
+{
+  "my_id": "4",
+  "text": "This is a answer doc 2",
+  "my_join_field":{
+    "name": "answer",
+    "parent": 1
+  }
+}
+
+GET my-index-000001/_search
+{
+  "query": {
+    "terms": {
+      "my_join_field#question": [
+        1
+        
+      ]
+    }
+  }
+}
+
+
+
+GET my-index-000001/_search
+{
+  "query": {
+    "parent_id":{
+      "type": "answer",
+      "id": 1
+    }
+  },
+  
+  "aggs":{
+    "parents":{
+      "terms":{
+        "field": "my_join_field#question",
+        "size": 10
+      }
+    }
+  },
+  "runtime_mappings": {
+    "parent": {
+      "type": "long",
+      "script": 
+      """
+      emit(Integer.parseInt(doc['my_join_field#question'].value))
+      """
+    }
+  },
+  "fields":[
+    {"field": "parent"}
+    ]
+  
+}
+
+
+GET my-index-000001/_search
+{
+  "query": {
+    "parent_id": { 
+      "type": "answer",
+      "id": "1"
+    }
+  },
+  "aggs": {
+    "parents": {
+      "terms": {
+        "field": "my_join_field#question", 
+        "size": 10
+      }
+    }
+  },
+  "runtime_mappings": {
+    "parent": {
+      "type": "long",
+      "script": """
+        emit(Integer.parseInt(doc['my_join_field#question'].value)) 
+      """
+    }
+  },
+  "fields": [
+    { "field": "parent" }
+  ]
+}
+
+
+GET my-index-000001/_mapping
+
+
+GET my-index-000001/_search
+{
+  "query": {
+    "parent_id": { 
+      "type": "answer",
+      "id": "1"
+    }
+  }
+  
+}
+
+
+
+#Per-Index
+
+GET my-index-000001/_stats/fielddata?human&fields=my_join_field#question
+
+
+
+GET _nodes/stats/indices/fielddata?human&fields=my_join_field#question
+
+
+PUT logs-debug
+{
+  "mappings": {
+    "properties": {
+      "@timestamp": {
+        "type": "date"
+      },
+      "message": {
+        "type": "text"
+      },
+      "level": {
+        "type": "constant_keyword",
+        "value": "debug"
+      }
+    }
+  }
+}
+
+PUT logs-debug/_doc/1
+{
+  "level": "decode"
+}
+
+
+DELETE my-index-000001
+
+
+PUT my-index-000001
+{
+  "mappings": {
+    
+    "properties": {
+      "user": {
+        "type": "nested"
+      }
+    }
+    
+  }
+}
+
+PUT my-index-000001/_doc/1
+{
+  "group" : "fans",
+  "user" : [
+    {
+      "first" : "John",
+      "last" :  "Smith"
+    },
+    {
+      "first" : "Alice",
+      "last" :  "White"
+    }
+  ]
+}
+
+
+GET my-index-000001/_search
+{
+  "query": {
+    "nested": {
+      "path": "user",
+      "query": {
+        "bool": {
+          "must": [
+                    {"match": {"user.first": "Alice"} },
+                    {"match": {"user.last": "White"} }
+                  
+          ]
+            
+        }
+      },
+      
+      "inner_hits": {
+        "highlight": {
+          "fields": {
+            
+          }
+        }
+      }
+      
+      
+    }
+  }
+}
+
+
+
+GET my-index-000001/_settings
+
+PUT my-index-000001/_settings
+{
+  "index": {
+    "mapping.nested_fields.limit": 1
+  }
+}
+
+
+PUT my-index-000001/_mapping
+{
+  "properties":{
+    "user":{
+      "type": "nested",
+      "properties":{
+          "comment":{
+          "type": "nested",
+          "properties":{
+            "txt":{
+              "type": "text"
+            },
+            "like":{
+              "type": "boolean"
+            }
+            
+          }
+        }
+      }
+      
+    }
+  }
+}
+
+PUT my-index-000001/_doc/2
+{
+  "group" : "fans",
+  "user" : [ 
+    {
+      "first" : "Jack",
+      "last" :  "Allen",
+      "comment":{
+        "like": true,
+        "txt": "congrats"
+      }
+    },
+    {
+      "first" : "Rose",
+      "last" :  "Brew",
+      "comment":{
+        "like": false,
+        "txt": "good luck"
+      }
+    }
+  ]
+}
+
+
+GET my-index-000001/_search
+{
+  "query": 
+  {
+    "nested": 
+    {
+      "path": "user",
+      "query": 
+      {
+            "bool": {
+              "must": [
+                { "match": { "user.first": "JACK" }},
+                { "match": { "user.last":  "Allen" }} 
+              ],
+              
+              "nested":{
+              "path": "user.comment",
+                  "query": {
+                    "bool": {
+                      "must": [
+                        { "match": { "user.comment.like": true }},
+                        { "match": { "user.comment.txt":"congrats" }} 
+                        
+                      ]
+                    }
+                }
+            }
+              
+              
+            }
+           
+        
+        
+        
+        
+      }
+
+         
+      
+    }
+    
+    
+    
+    
+  }
+}
+
+
+
+GET my-index-000001/_search
+{
+  "query":{
+    "bool": {
+      "should":[
+        
+        {
+          "nested": {
+            "path": "user",
+            "query": {
+              "bool":{
+                "must":[
+                        { "match": { "user.first": "fdfvdv" }},
+                      { "match": { "user.last":  "dfvdfvdfv" }} 
+                  ]
+              }
+            }
+          }
+        },
+        
+        {
+          "nested": {
+            "path": "user.comment",
+            "query": {
+              "bool":{
+                "must":[
+                  { "match": { "user.comment.like": true }},
+                        { "match": { "user.comment.txt":"congrats" }} 
+                  ]
+                  
+                
+              }
+            }
+            
+            
+          }
+        }
+        
+        
+        
+        ]
+       
+        
+        
+    }
+  }
+}
+
+PUT idx
+{
+  "mappings": {
+    "_source": { "mode": "synthetic" },
+    "properties": {
+      "f": { "type": "scaled_float", "scaling_factor": 0.01 }
+    }
+  }
+}
+PUT idx/_doc/1
+{
+  "f": 123
+}
+
+DELETE idx
+
+GET idx/_search
+
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      
+      "query":{
+        "type": "percolator"
+      },
+      "body":{
+        "type": "text"
+      }
+      
+    }
+  }
+}
+
+
+PUT my-index-000001/_doc/match_value
+{
+  "query":{
+    "match":{
+      "body": "hello"
+    }
+  }
+}
+
+GET my-index-000001/_mapping
+
+GET my-index-000001/_search
+
+
+POST _aliases/
+{
+  "actions": [
+    {
+      "add": {
+        "index": "my-index-000001",
+        "alias": "perq"
+      }
+    }
+  ]
+}
+
+ 
+PUT perq/_doc/1
+{
+  "query":{
+    "match": {
+      "body": "quick brown fox"
+    }
+  }
+}
+
+
+
+PUT new_index_2
+{
+  "mappings": {
+    "properties": {
+      "query" : {
+        "type" : "percolator"
+      },
+      "body" : {
+        "type": "text"
+      }
+    }
+  }
+}
+
+
+
+POST _aliases/
+{
+  "actions": [
+    {
+      "remove": {
+        "index": "my-index-000001",
+        "alias": "perq"
+      }
+    },
+    {
+      "add": {
+        "index": "new_index",
+        "alias": "perq"
+      }
+    }
+  ]
+}
+
+GET my-index-000001/_search
+
+GET perq/_search
+
+
+
+POST _reindex?refresh
+{
+  "source":{
+    "index" : "my-index-000001"
+  },
+  "dest":
+
+    {
+    "index": "new_index"
+    }
+
+
+    
+}
+
+
+
+GET perq/_search
+{
+  "query": {
+    "percolate": {
+      "field": "query",
+      "document": {
+        "body": "quick"
+      }
+    }
+  }
+}
+
+
+PUT perq/_doc/3
+{
+  "query" : {
+    "match" : {
+      "body" : {
+        "query" : "missing bicycles"
+      }
+    }
+  }
+}
+
+
+GET perq/_doc/3
+
+POST /new_index/_open
+
+
+PUT test_index
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_analyzer" : {
+          "tokenizer": "standard",
+          "filter" : ["lowercase", "porter_stem"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "query" : {
+        "type": "percolator"
+      },
+      "body" : {
+        "type": "text",
+        "analyzer": "my_analyzer" 
+      }
+    }
+  }
+}
+
+
+POST test_index/_analyze
+{
+  "analyzer": "my_analyzer",
+  "text": "missing bicycles"
+}
+
+
+POST _aliases
+{
+  "actions": [
+    {
+      "remove": {
+        "index": "new_index",
+        "alias": "perq"
+      }
+    },
+    {
+      "add": {
+        "index": "test_index",
+        "alias": "perq"
+      }
+    }
+  ]
+}
+
+
+POST _reindex
+{
+  "source": {
+    "index": "new_index"
+  },
+  "dest": {
+    "index": "test_index"
+  }
+}
+
+GET perq/_search
+
+PUT perq/_doc/5
+{
+  "query":{
+    "match":{
+      "body":{
+        "query": "miss bicycles",
+        "analyzer": "whitespace"
+      }
+    }
+  }
+}
+
+
+
+PUT wild_index
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "wildcard_prefix":{
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "wildcard_edge_ngram"
+            
+            ]
+        }
+      },
+      "filter": {
+        "wildcard_edge_ngram":{
+          "type": "edge_ngram",
+          "min_gram": 1,
+          "max_gram": 32
+        }
+      }
+    }
+  },
+  
+  "mappings": {
+    "properties": {
+      "query":{
+        "type": "percolator"
+      },
+      "my_field":{
+        "type": "text",
+        "fields":{
+          "prefix":{
+            "type": "text",
+            "analyzer": "wildcard_prefix",
+            "search_analyzer": "standard"
+          }
+        }
+      }
+    }
+  }
+  
+}
+
+
+DELETE wild_index
+
+
+PUT range_index
+{
+  "mappings": {
+    "properties": {
+      "expected_attendees":{
+        "type": "integer_range"
+      },
+      
+      "time_frame":{
+        "type": "date_range",
+        "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+      }
+      
+    }
+  }
+}
+
+
+PUT range_index/_doc/1
+{
+  "expected_attendees":{
+    "gt": 10,
+    "lte": 20
+  },
+  "time_frame":{
+    "gt": "2015-10-11 12:00:00",
+    "lte": "2015-10-12"
+  }
+  
+}
+
+
+
+GET range_index/_search
+{
+  "query": {
+    "term": {
+      "expected_attendees": {
+        "value": "13"
+      }
+    }
+  }
+}
+
+
+
+GET range_index/_search
+{
+  "query": {
+    "range":{
+      "time_frame": {
+        "gte": "2015-10-10",
+        "lte": "2015-10-11 15:00:00",
+        "relation": "within"
+      }
+      
+      
+    }
+  }
+}
+
+
+
+DELETE range_index
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "pagerank": {
+        "type": "rank_feature"
+      },
+      
+      "url_length": {
+        "type": "rank_feature",
+        "positive_score_impact": false
+      }
+      
+    }
+  }
+}
+
+
+PUT my-index-000001/_doc/1
+{
+  "pagerank": 5,
+  "url_length": 22
+}
+
+
+
+PUT my-index-000001/_doc/2
+{
+  "pagerank": 8,
+  "url_length": 25
+}
+
+
+GET my-index-000001/_search
+{
+  "query": {
+    "rank_feature":{
+      "field": "url_length"
+    }
+  }
+}
+
+
+PUT my-index-000001/_mapping
+{
+
+    "properties": {
+      "topics": {
+        "type": "rank_features" 
+      },
+      "negative_reviews" : {
+        "type": "rank_features",
+        "positive_score_impact": false 
+      }
+    }
+  
+}
+
+
+DELETE my-index-000001
+
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "my_field":{
+        "type": "search_as_you_type"
+      }
+    }
+  }
+}
+
+
+PUT my-index-000001/_doc/1?refresh
+{
+  "my_field": "quick brown fox jump lazy dog"
+}
+
+
+GET my-index-000001/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "brow",
+      "type": "bool_prefix",
+      "fields": [
+        "my_field",
+        "my_field._2gram",
+        "my_field._3gram",
+        "my_field._index_prefix"
+        ]
+    }
+  }
+}
+
+DELETE my-index-000001
+
+
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "location":{
+        "type": "shape"
+      }
+    }
+  }
+}
+
+
+PUT my-index-000001/_doc/1
+{
+  "location":{
+    "type": "point",
+    "coordinates": [-377.03653, 389.897676]
+  }
+}
+
+
+PUT my-index-000001/_doc/1
+{
+  "location": " POINT(-377.03653 389.897676)"
+}
+
+
+
+
+
+PUT my-index-000001/_doc/2
+{
+  "location":{
+    "type": "geometrycollection",
+    "geometries":[
+      {
+        "type": "point",
+        "coordinates": [-342.42342, 355.3455]
+      },
+      {
+        "type": "linestring",
+        "coordinates": [ [1001.0, 100.0], [1002.0, 100.0] ]
+      }
+      ]
+  }
+}
+
+
+
+PUT my-index-000001/_doc/3
+{
+  "location": "GEOMETRYCOLLECTION(POINT(12.32 23.34), LINESTRING(12.22 12.33,34.34 34.34))"
+}
+
+
+
+PUT my-index-000001/_doc/envelope
+{
+  "location": {
+    "type": "envelope",
+    "coordinates": [ [16.16, 15.15], [13.13, 12.12]]
+  }
+}
+
+
+POST my-index-000001/_doc
+{
+  "location": "BBOX (16.16, 15.15, 13.13, 12.12)"
+}
+
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{  "mappings": {
+    "properties": {
+      "name": { 
+        "type": "text",
+        "fields": {
+          "length": {
+            "type": "token_count",
+            "analyzer": "standard"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+PUT my-index-000001/_doc/1
+{ "name": "John Smith" }
+
+PUT my-index-000001/_doc/2
+{ "name": "Rachel Alice Williams" }
+
+PUT my-index-000001/_doc/3
+{ "name": "Tyson" }
+
+
+GET my-index-000001/_search
+{
+  "query": {
+    "range": {
+      "name.length":{
+       "lt": 3
+        
+      }
+    }
+  }
+}
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "my_counter": {
+        "type": "unsigned_long"
+      }
+    }
+  }
+}
+
+
+POST /my-index-000001/_bulk?refresh
+{"index":{"_id":1}}
+{"my_counter": 0}
+{"index":{"_id":2}}
+{"my_counter": 9223372036854775808}
+{"index":{"_id":3}}
+{"my_counter": 18446744073709551614}
+{"index":{"_id":4}}
+{"my_counter": 18446744073709551615}
+{"index":{"_id":5}}
+{"my_counter": 10}
+
+GET my-index-000001/_search
+{
+  "query": {
+    "match_all": {}
+  },
+  
+  "script_fields": {
+    "count10": {
+      "script": {
+        "source": "Long.divideUnsigned(doc['my_counter'].value, 10)"
+      }
+    }
+  }
+  
+}
+
+
+GET my-index-000001/_search
+{
+  "query": {
+    "match_all": {}
+  },
+  
+  "script_fields": {
+    "count10": {
+      "script": {
+        "source": "field('my_counter').asBigInteger(BigInteger.ZERO).floatValue()"
+      }
+    }
+  }
+  
+}
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "mappings" : {
+    "properties" : {
+      "my_histogram" : {
+        "type" : "histogram"
+      },
+      "my_text" : {
+        "type" : "keyword"
+      }
+    }
+  }
+}
+
+
+PUT my-index-000001/_doc/1
+{
+  "my_text" : "histogram_1",
+  "my_histogram" : {
+      "values" : [0.1, 0.2, 0.3, 0.4, 0.5],
+      "counts" : [3, 7, 23, 12, 6]
+   },
+  "_doc_count" : 1
+}
+
+PUT my-index-000001/_doc/2
+{
+  "my_text" : "histogram_2",
+  "my_histogram" : {
+      "values" : [0.1, 0.25, 0.35, 0.4, 0.45, 0.5],
+      "counts" : [8, 17, 8, 7, 6, 2]
+   },
+  "_doc_count" : 2
+}
+
+
+PUT my-index-000001/_doc/3
+{
+  "my_text" : "histogram_3"
+
+}
+
+
+
+GET my-index-000001/_search
+{
+  "aggs":{
+    "hist": {
+      "terms":{
+        "field": "my_text"
+      }
+    }
+  }
+}
+
+GET my-index-000001/_mapping
+
+
+GET my-index-000001/_search
+{
+  "query": {
+    "exists": {
+      "field": "_ignored"
+    }
+  }
+}
+
+
+
+GET my-index-000001/_search
+{
+  "query": {
+    "term": {
+      "_ignored": "@timestamp"
+    }
+  }
+}
+
+
+# ids query with terms
+GET my-index-000001/_search
+{
+  "query": {
+    "ids":{
+      "values": [1, 2, 3, 4]
+    }
+  }
+}
+
+GET my-index-000001/_search
+{
+  "query": {
+    "terms":{
+      "_id": [1, 2, 3, 4]
+    }
+  }
+}
+
+GET ip_location
+
+
+
+
+GET _search
+{
+  "query":{
+    "terms":{
+      "_index": ["my-index-000001", "arr_test", "ip_location"]
+    }
+  },
+  "aggs":{
+    "indices":{
+      "terms":{
+        "field": "_index",
+        "size": 10
+      }
+    }
+  },
+  
+  "sort": [
+    {
+      "_index":{
+          "order": "asc" 
+        
+      }
+    }
+    ],
+    
+    
+    
+    "script_fields":{
+      "index_name":{
+        "script":{
+          "lang": "painless",
+          "source": "doc['_index']"
+        }
+      }
+    }
+    
+    
+    
+    
+  
+}
+
+
+
+
+
+PUT meta_index
+{
+  "mappings": {
+    "_meta":{
+      "class": "myapp::user",
+      "version":{
+        "min": "0.2",
+        "max": "0.5"
+      }
+    }
+    
+  }
+}
+
+DELETE meta_index
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "mappings": {
+    "_routing": {
+      "required": true
+    }
+  }
+}
+
+
+
+PUT my-index-000001/_doc/1?routing=shard1
+{
+  "text": "No routing value provided"
+
+}
+
+
+DELETE logs
+
+PUT logs
+{
+  "mappings": {
+    "_source": {
+      "includes": [
+        "*.count",
+        "meta.*"
+      ],
+      "excludes": [
+        "meta.description",
+        "meta.other.*"
+      ]
+    }
+  }
+} 
+
+
+
+PUT logs/_doc/1
+{
+  "requests": {
+    "count": 10,
+    "foo": "bar" 
+  },
+  "meta": {
+    "name": "Some metric",
+    "description": "Some metric description", 
+    "other": {
+      "foo": "one", 
+      "baz": "two" 
+    }
+  }
+}
+
+
+
+GET logs/_search
+{
+  "query": {
+    "match": {
+      "meta.other.foo": "one" 
+    }
+  }
+}
+
+
+
+PUT index_1/_doc/1
+{
+  "text": "Document in index 1",
+  "_tier": "data_hot"
+  
+}
+
+PUT index_2/_doc/2?refresh=true
+{
+  "text": "Document in index 2"
+}
+
+GET index_1,index_2/_search
+{
+  "query": {
+    "terms": {
+      "_tier": ["data_hot", "data_warm"] 
+    }
+  }
+}
+
+
+DELETE my-index-000001
+
+GET my-index-000001/_search
+
+PUT my-index-000001
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_analyzer":{
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase"
+            ]
+        },
+        "my_stop_analyzer":{
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter":[
+            "lowercase",
+            "my_english_stop"
+            
+            ]
+        }
+      },
+      
+      "filter": {
+        "my_english_stop":{
+          "type": "stop",
+          "stopwords": "__english__"
+        }
+      }
+    }
+  },
+  
+  "mappings": {
+    "properties": {
+      "title":{
+        "type": "text",
+        "analyzer": "my_analyzer",
+        "search_analyzer": "my_stop_analyzer",
+        "search_quote_analyzer": "my_analyzer"
+      }
+    }
+  }
+  
+}
+
+
+PUT my-index-000001/_doc/1
+{
+   "title":"The Quick Brown Fox"
+}
+
+PUT my-index-000001/_doc/2
+{
+   "title":"A Quick Brown Fox"
+}
+
+GET my-index-000001/_search
+{
+   "query":{
+      "query_string":{
+         "query":"\"the quick brown fox\"" 
+      }
+   }
+}
+
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "settings": {
+    "index.mapping.coerce": false
+  },
+  "mappings": {
+    "properties": {
+      "number_one": {
+        "type": "integer",
+        "coerce": true
+      },
+      "number_two": {
+        "type": "integer"
+      }
+    }
+  }
+}
+
+PUT my-index-000001/_doc/1
+{ "number_one": "10" } 
+
+PUT my-index-000001/_doc/2
+{ "number_two": "10" } 
+
+
+
+DELETE my-index-000001
+
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "first_name": {
+        "type": "text",
+        "copy_to": "full_name" 
+      },
+      "last_name": {
+        "type": "text",
+        "copy_to": "full_name" 
+      },
+      "full_name": {
+        "type": "text"
+      }
+    }
+  }
+}
+
+PUT my-index-000001/_doc/1
+{
+  "first_name": "John",
+  "last_name": "Smith"
+}
+
+
+
+GET my-index-000001/_search
+{
+  "query": {
+    "match":{
+      "full_name":{
+        "query": "John Smith",
+        "operator": "and"
+      }
+    }
+  }
+}
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "user_id": {
+        "type":  "keyword"
+      },
+      "last_updated": {
+        "type": "date"
+      },
+      "session_data": { 
+        "type": "object",
+        "enabled": false
+      }
+    }
+  }
+}
+
+
+
+PUT my-index-000001/_doc/session_1
+{
+  "user_id": "kimchy",
+  "session_data": { 
+    "arbitrary_object": {
+      "some_array": [ "foo", "bar", { "baz": 2 } ]
+    }
+  },
+  "last_updated": "2015-12-06T18:20:22"
+}
+
+
+GET my-index-000001/_mapping
+
+DELETE my-index-000001
+
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "message": {
+        "type": "keyword",
+        "ignore_above": 20 
+      }
+    }
+  }
+}
+
+PUT my-index-000001/_doc/1 
+{
+  "message": "Syntax error"
+}
+
+PUT my-index-000001/_doc/2 
+{
+  "message": "Syntax error with some long stacktracedssdfsdfsfsdfsdf"
+}
+
+
+GET my-index-000001/_search
+{
+  "aggs":{
+    "mes":{
+      "terms":{
+        "field": "message"
+      }
+    }
+  }
+}
+
+
+DELETE my-index-000001
+
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "txt":{
+        "type": "text",
+        "index_options": "offsets"
+      }
+    }
+  }
+}
+
+PUT my-index-000001/_doc/1
+{
+  "txt": "hello im coming"
+}
+
+GET my-index-000001/_search
+
+GET my-index-000001/_search
+{
+  "query": {
+    "match": {
+      "txt": "coming"
+    }
+  },
+  "highlight": {
+    "fields": {
+      "txt":{}
+    }
+  }
+  
+  
+}
+
+
+
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "latency":{
+        "type": "long",
+        "meta": {
+           "unit": "ms"
+        }
+      }
+      
+    }
+  }
+}
+
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "text": { 
+        "type": "text",
+        "fields": {
+          "english": { 
+            "type":     "text",
+            "analyzer": "english"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+PUT my-index-000001/_doc/1
+{ "text": "quick brown fox" } 
+
+PUT my-index-000001/_doc/2
+{ "text": "quick brown foxes" } 
+
+GET my-index-000001/_search
+{
+  "query":{
+    "multi_match":{
+      "query": "quick brown foxes",
+      "fields":["text", "text.english"],
+      "type": "most_fields"
+      
+    }
+  }
+}
+
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "settings": {
+    "analysis": {
+      "normalizer":{
+        "my_normalizer":{
+          "type": "custom",
+          "char_filter":{},
+          "filter": ["lowercase", "asciifolding"]
+        }
+      }
+    }
+  },
+  
+  "mappings": {
+    "properties":{
+      "foo": {
+        "type": "keyword",
+        "normalizer": "my_normalizer"
+      }
+    }
+  }
+  
+}
+
+
+
+PUT my-index-000001/_doc/1
+{
+  "foo": "BÀR"
+
+}
+
+
+PUT my-index-000001/_doc/2
+{
+  "foo":"bar"
+}
+
+PUT my-index-000001/_doc/3
+{
+  "foo":"baz"
+}
+
+
+GET my-index-000001/_search
+{
+  "query": {
+    "term": {
+      "foo": "BAR"
+    }
+  }
+}
+
+GET my-index-000001/_search
+{
+  "query": {
+    "match": {
+      "foo": "BAR"
+    }
+  }
+}
+
+
+DELETE my-index-000001
+
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "status_code":{
+        "type": "keyword",
+        "null_value": "NULL"
+      }
+    }
+  }
+}
+
+
+PUT my-index-000001/_doc/1
+{
+  "status_code": null
+}
+
+
+PUT my-index-000001/_doc/2
+{
+  "status_code": []
+}
+
+GET my-index-000001/_search
+
+
+
+GET my-index-000001/_search
+{
+  "query": {
+    "match": {
+      "status_code": "NULL" 
+    }
+  }
+}
+
+DELETE my-index-000001
+
+PUT my-index-000001/_doc/1
+{
+  "names": [ "John Abraham", "Lincoln Smith"]
+}
+
+
+GET my-index-000001/_search
+{
+  "query":{
+    "match_phrase": {
+      "names": {
+        "query" : "Abraham Lincoln",
+        "slop": 101
+      }
+    }
+  }
+}
+
+
+
+DELETE my-index-000001
+
+
+PUT my-index-000001
+{
+  "settings": {
+    "analysis": {
+      "filter":{
+        "autocomplete_filter":{
+          "type": "edge_ngram",
+          "min_ngram": 1,
+          "max_ngram": 20
+        }
+      },
+      
+      "analyzer": {
+        "autocomplete":{
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter":[ "lowercase", "autocomplete_filter"]
+        }
+      }
+      
+    }
+  },
+  
+  "mappings": {
+    "properties": {
+      
+      "text":{
+        "type": "text",
+        "analyzer": "autocomplete",
+        "search_analyzer": "standard"
+      }
+    }
+  }
+  
+  
+  
+}
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "metrics": {
+        "type":  "object",
+        "subobjects": false 
+      }
+    }
+  }
+}
+
+PUT my-index-000001/_doc/metric_1
+{
+  "metrics.time" : 100, 
+  "metrics.time.min" : 10,
+  "metrics.time.max" : 900
+}
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "text": {
+        "type":        "text",
+        "term_vector": "with_positions_offsets"
+      }
+    }
+  }
+}
+
+
+PUT my-index-000001/_doc/1
+{
+  "text": "Quick brown fox"
+}
+
+GET my-index-000001/_search
+{
+  "query": {
+    "match": {
+      "text": "brown fox"
+    }
+  },
+  "highlight": {
+    "fields": {
+      "text": {} 
+    }
+  }
+}
+
+
+DELETE my-index-000001
+
+
+PUT my-index-000001/_doc/1
+{
+  "text": "domain name system"
+}
+
+GET my-index-000001/_search
+{
+  "query":{
+    "match":{
+      "text": "dns"
+    }
+  }
+}
+
+
+DELETE my-index-000001
+
+
+PUT my-index-000001
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "std_english":{
+          "type": "standard",
+          "stopwords": "_english_"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "my_text":{
+        "type": "text",
+        "analyzer": "standard",
+        "fields": {
+          "english":{
+            "type": "text",
+            "analyzer": "std_english"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+POST my-index-000001/_analyze
+{
+  "field": "my_text",
+  "text":  "The old brown cow"
+}
+
+
+POST my-index-000001/_analyze
+{
+  "field": "my_text.english",
+  "text":  "The old brown cow"
+}
+
+DELETE my-index-000001
+
+
+
+PUT my-index-000001
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_custom_analyzer":{
+          "type": "custom",
+          "tokenizer": "standard",
+          "char_filte": ["html_strip"],
+          "filter": ["lowercase", "asciifolding"]
+    
+        }
+      }
+    }
+  }
+}
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_custom_analyzer":{
+          "type": "custom",
+          "tokenizer": "punctuation",
+          "char_filter": ["html_strip", "emitocon"],
+          "filter": ["lowercase", "english_stop"]
+        }
+      },
+      
+      "tokenizer": {
+        "punctuation":{
+          "type": "pattern",
+          "pattern": "[.,!?]"
+        }
+      },
+      
+      "filter":{
+        "english_stop":{
+          "type": "stop",
+          "stopwords": "_english_"
+        }
+      },
+      
+      "char_filter": {
+        "emitocon":{
+          "type": "mapping",
+          "mappings":[
+            ":) => _happy_",
+            ":( => _sad_"
+            ]
+        }
+      }
+
+      
+    }
+  }
+}
+
+
+POST my-index-000001/_analyze
+{
+  "analyzer": "my_custom_analyzer",
+  "text": "I'm a :) person, and you?"
+}
+
+DELETE my-index-000001
+
+
+PUT my-index-000001
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "default": {
+          "type": "simple"
+          
+        }
+      }
+    }
+  }
+}
+
+
+PUT my-index-000001
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "default_search": {
+          "type": "simple"
+          
+        }
+      }
+    }
+  }
+}
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_fingerprint_analyzer": {
+          "type": "fingerprint",
+          "stopwords": "_english_"
+          
+        }
+      }
+    }
+  }
+}
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "rebuild_fingerprint_analyzer": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "stopwords": "_english_",
+          "filter": [
+            "lowercase",
+            "fingerprint", 
+            "asciifolding"
+            ]
+          
+        }
+      }
+    }
+  }
+}
+
+PUT my-index-000001
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "rebuild_keyword_analyzer": {
+          "type": "custom",
+          "tokenizer": "keyword",
+        
+          "filter": [
+            "decimal_digit",
+             "lowercase"
+            ]
+          
+        }
+      }
+    }
+  }
+}
+
+DELETE my-index-000001
+
+
+PUT my-index-000001
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "pattern_analyzer":{
+          "type": "pattern",
+          "pattern": "\\W|_",
+          "lowercase": true
+        }
+      }
+    }
+  }
+}
+
+
+# simple analyzer
+PUT /my-index-000001
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_custom_simple_analyzer": {
+          "tokenizer": "lowercase",
+          "filter": [                          
+          ]
+        }
+      }
+    }
+  }
+}
+
+DELETE my-index-000001
+
+#standard analyzer
+PUT /my-index-000001
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_custom_standard_analyzer": {
+          "type": "standard",
+          "max_token_length": 10,
+          "filter": [                          
+          ]
+        }
+      }
+    }
+  }
+}
+
+
+
+
+###### COMPONENT TEMPLATES ######
+
+PUT _component_template/component_template1
+{
+  "template": {
+    "mappings": {
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        }
+      }
+    }
+  }
+}
+
+PUT _component_template/runtime_component_template
+{
+  "template": {
+    "mappings": {
+      "runtime":{
+        "day_of_week":{
+          "type": "keyword",
+          "script": {
+            "source": "emit(doc['@timestamp'].value.dayOfWeekEnum.getDisplayName(TextStyle.FULL, Locale.ROOT))"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+
+PUT _index_template/template1
+{
+  "index_patterns": ["te*", "bar*"],
+  "template": {
+    
+    
+    "mappings": {
+      "_source": {
+      "enabled": true
+    },
+      "properties": {
+        "host_name":{
+          "type": "keyword"
+        },
+        
+        "created_at":{
+          "type": "date",
+          "format":"yyyy-MM-dd HH:mm:ss||epoch_millis"
+        }
+        
+      }
+    },
+    "aliases": {
+      "mydata": {}
+    }
+  },
+  
+  "composed_of": ["component_template1", "runtime_component_template"],
+  "priority": 500,
+  "version": 3,
+  "_meta": {
+    "description": "my custom index template"
+  }
+  
+}
+
+
+GET _index_template
+
+
+POST /_index_template/_simulate_index/my-index-000001
+
+
+POST /_index_template/_simulate/
+{
+  "settings":{
+    
+  }
+}
+
+
+
+PUT _component_template/logs-foo_component1
+{
+  "template": {
+    "mappings": {
+      "properties": {
+        "host.name": {
+          "type": "keyword"
+        }
+      }
+    }
+  }
+}
+
+
+DELETE _index_template/logs-foo
+
+PUT _index_template/logs-foo
+{
+  "index_patterns": ["logs-foo-*"],
+  "data_stream": { },
+  "composed_of": ["logs-foo_component1", "logs-foo_component2"],
+  "ignore_missing_component_templates": ["logs-foo_component2"],
+  "priority": 500
+}
+
+
+PUT _data_stream/logs-foo-bar
+
+DELETE _data_stream/logs-foo-bar
+
+
+GET /logs-foo-bar
+
+DELETE _component_template/logs-foo_component2
+
+PUT _component_template/logs-foo_component2
+{
+  "template": {
+    "mappings": {
+      "properties": {
+        "host.ip": {
+          "type": "ip"
+        }
+      }
+    }
+  }
+}
+
+
+POST logs-foo-bar/_rollover
+
+
+
+PUT _ilm/policy/my-lifecycle-policy
+{
+  "policy": {
+    "phases": {
+      "hot": {
+        "actions": {
+          "rollover": {
+            "max_primary_shard_size": "50gb"
+          }
+        }
+      },
+      "warm": {
+        "min_age": "30d",
+        "actions": {
+          "shrink": {
+            "number_of_shards": 1
+          },
+          "forcemerge": {
+            "max_num_segments": 1
+          }
+        }
+      },
+      "cold": {
+        "min_age": "60d",
+        "actions": {
+          "searchable_snapshot": {
+            "snapshot_repository": "found-snapshots"
+          }
+        }
+      },
+      "frozen": {
+        "min_age": "90d",
+        "actions": {
+          "searchable_snapshot": {
+            "snapshot_repository": "found-snapshots"
+          }
+        }
+      },
+      "delete": {
+        "min_age": "735d",
+        "actions": {
+          "delete": {}
+        }
+      }
+    }
+  }
+}
+
+
+
+# Creates a component template for mappings
+PUT _component_template/my-mappings
+{
+  "template": {
+    "mappings": {
+      "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "date_optional_time||epoch_millis"
+        },
+        "message": {
+          "type": "wildcard"
+        }
+      }
+    }
+  },
+  "_meta": {
+    "description": "Mappings for @timestamp and message fields",
+    "my-custom-meta-field": "More arbitrary metadata"
+  }
+}
+
+# Creates a component template for index settings
+PUT _component_template/my-settings
+{
+  "template": {
+    "settings": {
+      "index.lifecycle.name": "my-lifecycle-policy"
+    }
+  },
+  "_meta": {
+    "description": "Settings for ILM",
+    "my-custom-meta-field": "More arbitrary metadata"
+  }
+}
+
+
+
+PUT _index_template/my-index-template
+{
+  "index_patterns": ["my-data-stream*"],
+  "data_stream": { },
+  "composed_of": [ "my-mappings", "my-settings" ],
+  "priority": 500,
+  "_meta": {
+    "description": "Template for my time series data",
+    "my-custom-meta-field": "More arbitrary metadata"
+  }
+}
+
+
+PUT my-data-stream/_bulk
+{ "create":{ } }
+{ "@timestamp": "2099-05-06T16:21:15.000Z", "message": "192.0.2.42 - - [06/May/2099:16:21:15 +0000] \"GET /images/bg.jpg HTTP/1.0\" 200 24736" }
+{ "create":{ } }
+{ "@timestamp": "2099-05-06T16:25:42.000Z", "message": "192.0.2.255 - - [06/May/2099:16:25:42 +0000] \"GET /favicon.ico HTTP/1.0\" 200 3638" }
+
+
+
+
+
+POST my-data-stream/_doc
+{
+  "@timestamp": "2099-05-06T16:21:15.000Z",
+  "message": "192.0.2.42 - - [06/May/2099:16:21:15 +0000] \"GET /images/bg.jpg HTTP/1.0\" 200 24736"
+}
+
+
+
+POST /my-data-stream/_doc/
+{
+  "@timestamp": "2099-03-08T11:06:07.000Z",
+  "user": {
+    "id": "8a4f500d"
+  },
+  "message": "Login successful"
+}
+
+
+
+PUT /my-data-stream/_bulk?refresh
+{"create":{ }}
+{ "@timestamp": "2099-03-08T11:04:05.000Z", "user": { "id": "vlb44hny" }, "message": "Login attempt failed" }
+{"create":{ }}
+{ "@timestamp": "2099-03-08T11:06:07.000Z", "user": { "id": "8a4f500d" }, "message": "Login successful" }
+{"create":{ }}
+{ "@timestamp": "2099-03-09T11:07:08.000Z", "user": { "id": "l7gk7f82" }, "message": "Logout successful" }
+
+
+
+
+GET _data_stream/my-data-stream/_stats?human=true
+
+
+
+PUT /_index_template/my-data-stream-template
+{
+  "index_patterns": [ "tst-stream*" ],
+  "data_stream": { },
+  "priority": 500,
+  "template": {
+    "mappings": {
+      "properties": {
+        "message": {                              
+          "type": "text"
+        }
+      }
+    }
+  }
+}
+
+
+PUT /_index_template/my-data-stream-template
+{
+  "index_patterns": [ "tst-stream*" ],
+  "data_stream": { },
+  "priority": 500,
+  "template": {
+    "mappings": {
+      "properties": {
+        "body": {                              
+          "type": "text"
+        }
+      }
+    }
+  }
+}
+
+
+
+        "@timestamp":{
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        }
+
+GET _index_template/my-data-stream-template
+
+
+DELETE _data_stream/tst-stream
+
+PUT /tst-stream/_create/1
+{
+  "message":"hii",
+  "body": "how are you",
+   "@timestamp": "2023-05-05"
+ 
+}
+
+
+PUT /tst-stream/_create/2
+{
+  "message":"Hey",
+  "body": "how are you",
+  "@timestamp": "2023-05-05"
+}
+
+
+
+
+PUT _data_stream/tst-stream
+
+PUT tst-stream/_mapping
+{
+  "properties":{
+    "msg": {
+      "type":"keyword"
+    },
+    "@timestamp": {
+      "type":"date"
+    }
+  }
+}
+
+
+GET /tst-stream/_mapping
+
+DELETE my-index-000001
+
+PUT my-index-000001
+{
+  "mappings": {
+    "properties": {
+      "message":{
+        "type": "keyword"
+        
+      }
+    }
+  }
+}
+
+
+
+PUT my-index-000001/_doc/1
+{
+  "message": "HII",
+  "text": "this is greeting"
+}
+
+GET my-index-000001/_search
+{
+  "query": {
+    "match": {
+      "message": "hii"
+    }
+  },
+  "collapse": {
+    "field": "message"         
+  },
+  "sort": [
+    {
+      "message": { 
+        "order": "desc"
+      }
+    }
+  ],
+  "from": 0                    
+}
+
+
+GET my-index-000001/_search
+
+
+PUT /shirts
+{
+  "mappings": {
+    "properties": {
+      "brand": { "type": "keyword"},
+      "color": { "type": "keyword"},
+      "model": { "type": "keyword"}
+    }
+  }
+}
+
+PUT /shirts/_doc/1?refresh
+{
+  "brand": "gucci",
+  "color": "red",
+  "model": "slim"
+}
+
+
+GET /shirts/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        { "term": { "color": "red"   }},
+        { "term": { "brand": "gucci" }}
+      ]
+    }
+  }
+}
+
+
+GET /shirts/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        { "term": { "color": "red"   }},
+        { "term": { "brand": "gucci" }}
+      ]
+    }
+  },
+  "aggs": {
+    "models": {
+      "terms": { "field": "model" } 
+    }
+  }
+}
+
+
+
+
+
+GET /shirts/_search
+{
+  "query": {
+    "bool": {
+      "filter": {
+        "term": { "brand": "gucci" } 
+      }
+    }
+  },
+  "aggs": {
+    "colors": {
+      "terms": { "field": "color" } 
+    },
+    "color_red": {
+      "filter": {
+        "term": { "color": "red" } 
+      },
+      "aggs": {
+        "models": {
+          "terms": { "field": "model" } 
+        }
+      }
+    }
+  },
+  "post_filter": { 
+    "term": { "color": "red" }
+  }
+}
+
+
+
+##Highlighting
+
+DELETE highlite
+
+PUT highlite
+{
+  "mappings": {
+    "properties": {
+      "body":{
+        "type": "text",
+        "fields": {
+          "raw":{
+            "type": "keyword"
+          }
+        }
+      },
+      "blog": {
+        "properties": {
+          "title":{"type": "keyword"},
+          "author":{"type": "text"},
+          "comment":{"type": "text"}
+        }
+        
+        
+    },
+    
+    "user":{
+           "properties": {
+          "id":{"type": "keyword"}
+           }
+        }
+    
+    
+  }
+}
+}
+
+
+
+POST highlite/_doc
+{
+  "user.id": "kimchy",
+  "blog.title": "Software Rules",
+  "blog.author": "Vinay Pottabathini",
+  "blog.comment": "Absolute Truth",
+  "body": "this is all about blog blog blog"
+}
+
+
+
+
+
+POST highlite/_doc
+{
+  "user":{
+    "id": "kimchy"
+  },
+  
+  "blog":{
+    "title": "Software Rules",
+  "author": "Vinay Pottabathini",
+  "comment": "Absolute Truth"
+  },
+  "body": "this is all about blog blog blog"
+}
+
+
+
+GET /_search
+{
+  "query" : {
+    "match": { "blog.author": "Vinay" }
+  },
+  "highlight" : {
+    "number_of_fragments" : 2,
+    "fragment_size" : 150,
+    "fields" : {
+      "body" : { "pre_tags" : ["<b>"], "post_tags" : ["</b>"] },
+      "blog.title" : { "number_of_fragments" : 0 },
+      "blog.author" : { "number_of_fragments" : 0 },
+      "blog.comment" : { "number_of_fragments" : 5, "order" : "score"
+      },
+      "user.id":{}
+    }
+  }
+}
+
+
+
+GET highlite/_search
+{
+  "query": {
+    "match": {
+      "user.id": "kimchy"
+    }
+  },
+  
+  "rescore": {
+    "query": {
+      "rescore_query":{
+        "match_phrase":{
+          "blog.comment": {
+            "query": "truth",
+            "slop": 1
+          }
+        }
+       
+      },
+       "rescore_query_weight": 10
+    },
+    "window_size": 50
+    
+  },
+  
+  "highlight": {
+    "order": "score",
+    "fields":{
+      "blog.comment": {
+        "fragment_size": 150,
+        "number_of_fragments": 5,
+        "highlight_query": {
+          "bool":{
+            "must":{
+              "match":{
+                "blog.comment": {
+                  "query": "absolute" 
+                }
+              }
+            },
+            "should": {
+              "match_phrase":{
+                "blog.comment":{
+                  "query": "absolute truth",
+                  "slop": 1,
+                  "boost": 10
+                }
+              }
+            },
+            "minimum_should_match": 0
+          }
+        }
+      }
+    }
+  }
+  
+  
+}
+GET highlite/_search
+
+GET highlite/_search
+{
+  "query" : {
+    "match": { "blog.title": "rules" }
+  },
+  "highlight" : {
+    "fields" : {
+      "body" : {},
+      "blog.title" : {"number_of_fragments" : 0}
+    }
+  }
+}
+
+
+
+GET /_search
+{
+  "query": {
+    "match": { "blog.comment": "truth." }
+  },
+  "highlight": {
+    "fields": {
+      "blog.comment": {
+        "fragment_size":5,
+        "number_of_fragments": 3,
+        "no_match_size": 5
+      }
+    }
+  }
+}
+
+
+
+PUT _cluster/settings
+{
+  "persistent": {
+    "cluster.remote.cluster_two.skip_unavailable": true
+  
+  }
+}
+
+
+GET /_cluster
+
+
+
+PUT /_cluster/settings
+{
+  "persistent": {
+    "cluster.remote.cluster_two.skip_unavailable": true
+  }
+}
+
+# ** EXAM OBJECTIVE: INSTALLATION AND CONFIGURATION **
+# GOAL: Setup an Elasticsearch cluster that satisfies a given set
+#       of requirements
+# REQUIRED SETUP: /
+
+
+# Download the exam version of Elasticsearch
+# Deploy the cluster `eoc-01-cluster`, so that it satisfies the 
+#    following requirements:
+#    (i)   has three nodes, named `node1`, `node2`, and `node3`,
+#    (ii)  all nodes are eligible master nodes
+
+
+PUT my-index-000001/_doc/6
+{
+  "content": "big apple"
+}
+
+
+GET my-index-000001/_search
+{
+  "query": {
+    "query_string": {
+      "query": "(new york city) OR (big apple)",
+      "default_field": "content"
+    }
+  }
+}
+
+DELETE hamlet
+
+PUT hamlet
+
+PUT _doc/_bulk
+{"index":{"_index":"hamlet","_id":0}}
+{"line_number":"1","speaker":"BERNARDO","text_entry":"Whos there?"}
+{"index":{"_index":"hamlet","_id":1}}
+{"line_number":"2","speaker":"FRANCISCO","text_entry":"Nay, answer me: stand, and unfold yourself."}
+{"index":{"_index":"hamlet","_id":2}}
+{"line_number":"3","speaker":"BERNARDO","text_entry":"Long live the king!"}
+{"index":{"_index":"hamlet","_id":3}}
+{"line_number":"4","speaker":"FRANCISCO","text_entry":"Bernardo?"}
+{"index":{"_index":"hamlet","_id":4}}
+{"line_number":"5","speaker":"BERNARDO","text_entry":"He."}
+{"index":{"_index":"hamlet","_id":5}}
+{"line_number":"6","speaker":"FRANCISCO","text_entry":"You come most carefully upon your hour."}
+{"index":{"_index":"hamlet","_id":6}}
+{"line_number":"7","speaker":"BERNARDO","text_entry":"Tis now struck twelve; get thee to bed, Francisco."}
+{"index":{"_index":"hamlet","_id":7}}
+{"line_number":"8","speaker":"FRANCISCO","text_entry":"For this relief much thanks: tis bitter cold,"}
+{"index":{"_index":"hamlet","_id":8}}
+{"line_number":"9","speaker":"FRANCISCO","text_entry":"And I am sick at heart."}
+{"index":{"_index":"hamlet","_id":9}}
+{"line_number":"10","speaker":"BERNARDO","text_entry":"Have you had quiet guard?"}
+
+
+DELETE hamlet-1
+
+GET hamlet-1/_settings
+
+PUT hamlet-1/
+{
+  "settings": {
+    "index.number_of_shards": 2,
+    "index.number_of_replicas": 1
+  }
+}
+
+
+PUT /_doc/_bulk
+{"index":{"_index":"hamlet-1","_id":0}}  
+{"line_number":"1","speaker":"BERNARDO","text_entry":"Whos there?"}
+{"index":{"_index":"hamlet-1","_id":1}} 
+{"line_number":"2","speaker":"FRANCISCO","text_entry":"Nay, answer me: stand, and unfold yourself."}
+{"index":{"_index":"hamlet-1","_id":2}}
+{"line_number":"3","speaker":"BERNARDO","text_entry":"Long live the king!"}
+{"index":{"_index":"hamlet-1","_id":3}}
+{"line_number":"4","speaker":"FRANCISCO","text_entry":"Bernardo?"}
+{"index":{"_index":"hamlet-1","_id":4}}
+{"line_number":"5","speaker":"BERNARDO","text_entry":"He."}
+
+
+
+PUT /hamlet-2
+{
+  "settings": {
+    "index.number_of_shards": 2,
+    "index.number_of_replicas": 1
+  }
+}
+
+PUT /_doc/_bulk
+{"index":{"_index":"hamlet-2","_id":5}}
+{"line_number":"6","speaker":"FRANCISCO","text_entry":"You come most carefully upon your hour."}
+{"index":{"_index":"hamlet-2","_id":6}}
+{"line_number":"7","speaker":"BERNARDO","text_entry":"Tis now struck twelve; get thee to bed, Francisco."}
+{"index":{"_index":"hamlet-2","_id":7}}
+{"line_number":"8","speaker":"FRANCISCO","text_entry":"For this relief much thanks: tis bitter cold,"}
+{"index":{"_index":"hamlet-2","_id":8}}
+{"line_number":"9","speaker":"FRANCISCO","text_entry":"And I am sick at heart."}
+{"index":{"_index":"hamlet-2","_id":9}}
+{"line_number":"10","speaker":"BERNARDO","text_entry":"Have you had quiet guard?"}
+
+
+
+
+GET /_cat/shards/hamlet-1,hamlet-2?h=index,shard,prirep,state,unassigned.reason  
+
+
+
+
+#Check the distribution of primary shards and replicas of indices
+ #   `hamlet-1` and `hamlet-2` across the nodes of the cluster
+
+GET /_cat/allocation?h=shards,host,ip,node&index=hamlet-1,hamlet-2
+
+
+GET /_cat/nodes?v
+
+
+POST test_index/_doc
+{"@timestamp":"2022-06-20T14:16:10Z","kubernetes":{"host":"gke-apps-0","node":"gke-apps-0-0","pod":"gke-apps-0-0-0","container":{"cpu":{"usage":{"nanocores":114497,"core":{"ns":12828317850},"node":{"pct":2.77905e-05},"limit":{"pct":2.77905e-05}}},"memory":{"available":{"bytes":223669125},"usage":{"bytes":240023716,"node":{"pct":0.01770037710617187},"limit":{"pct":9.923134671484496e-05}},"workingset":{"bytes":1139671},"rss":{"bytes":129761},"pagefaults":126658,"majorpagefaults":0},"start_time":"2021-03-30T07:59:06Z","name":"container-name-44"},"namespace":"namespace26"}}
+
+POST test_index/_doc
+{
+  "cal": "1+1=2"
+}
+
+
+
+
+
+GET test_index/_search
+{
+  "query":{
+    "query_string": {
+      "default_field": "text",
+      "query": "kimchy\\!"
+    }
+  }
+}
+
+
+GET test_index/_search
+{
+  "query":{
+    "query_string": {
+      "default_field": "cal",
+      "query": "\\1\\+\\1\\=\\2"
+    }
+  }
+}
+
+
+
+GET test_index/_search
+{
+  "query": {
+    "simple_query_string": {
+      "fields": [ "text" ],
+      "query": "foo bar +-baz"
+      
+    }
+  }
+}
+
+
+
+
+
+
+POST test_index/_doc
+{
+  "text": "foo bar baz"
+}
