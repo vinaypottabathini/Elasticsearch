@@ -1,0 +1,64 @@
+
+/*
+
+Create the social_media_analyzer Component Template
+
+From the Kibana console, create the social_media_analyzer component template with the following requirements:
+
+Creates a custom analyzer called social_media that uses the classic tokenizer.
+Uses the lowercase filter and a custom english_stop filter. The english_stop filter should remove English stop words.
+Uses a custom emoticons mapping character filter with the following mappings:
+:) as happy
+:D as laughing
+:( as sad
+:') as crying
+:O as surprised
+;) as winking
+
+
+*/
+
+
+PUT _component_template/social_media_analyzer
+{
+  "template": {
+    "settings": {
+      "analysis": {
+        "analyzer": {
+          "social_media": {
+            "tokenizer": "classic",
+            "filters": [
+              "lowercase",
+              "english_stop"
+            ],
+            "char_filter": [
+              "emoticons"
+            ]
+          }
+        },
+        "char_filter": {
+          "emoticons": {
+            "type": "mapping",
+            "mappings": [
+              ":) => happy",
+              ":D => laughing",
+              ":( => sad",
+              ":') => crying",
+              ":O => surprised",
+              ";) => winking"
+            ]
+          }
+          },
+          "filter": {
+            "english_stop": {
+              "type": "stop",
+              "stopwords": [
+                "_english_"
+              ]
+            }
+          }
+        }
+      }
+    }
+}
+
