@@ -1,0 +1,88 @@
+/*
+
+Create the migrate_accounts Ingest Pipeline
+
+From the Kibana console on the accounts2 node, create an ingest pipeline called migrate_accounts that does the following:
+
+Removes the account_number field.
+Creates the fullname field, which is a concatenation of the firstname field, a space, and the lastname field.
+Adds a 5% bonus to each account's balance and keeps track of applied bonuses with the bonus_pct field.
+
+*/
+
+
+
+
+PUT _ingest/pipeline/migrate_accounts
+{
+  "description": "creating account2 index from account1 node to account2 node",
+  "processors": [
+    {
+      "remove": {
+        "field": "account_number"
+      }
+    },
+    {
+      "set": {
+        "field": "fullname",
+        "value": "{{_source.firstname}} {{_source.lastname}}"
+      }
+    },
+    {
+      "script": {
+        "source": """
+        ctx.balance += (ctx.balance*0.05);
+        if(ctx.bonus_pct == null)
+        {
+          ctx.bonus_pct = 5;
+        }
+        else{
+          ctx.bonus_pct +=5;
+        }
+        """
+      }
+    }
+
+    
+  ]
+}
+
+
+
+
+
+
+/*
+Copy the accounts Index from the accounts1 Node to the accounts2 Node with the migrate_accounts Ingest Pipeline
+
+From the Kibana console on the accounts2 node, remote copy the accounts index from the accounts1 node to a local accounts index, and process the copied data with the migrate_accounts ingest pipeline.
+
+*/
+
+
+POST _reindex
+{
+  "source": {
+    "remote": {
+      "host": "http://10.0.1.101:9200",
+      "username": "elastic",
+      "password": "elastic_acg"
+    },
+    "index": "accounts"
+  },
+  "dest": {
+    "index": "accounts",
+    "pipeline": "migrate_accounts"
+  }
+  
+  
+}
+
+
+GET accounts/_search
+
+
+
+
+
+
