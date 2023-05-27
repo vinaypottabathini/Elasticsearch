@@ -1,0 +1,22 @@
+/*
+Copy the Shakespeare Index from the es1 Node to the Shakespeare Node
+From the Kibana console on the shakespeare node, remote copy the shakespeare index from es1 to a local shakespeare index.
+*/
+
+
+
+POST _reindex
+{
+  "source": {
+    "remote": {
+      "host": "http://10.0.1.101:9200",
+      "username": "elastic",
+      "password": "elastic_acg"
+    },
+    "index": "shakespeare"
+  },
+  "dest": {
+    "index": "shakespeare"
+  }
+  
+}
