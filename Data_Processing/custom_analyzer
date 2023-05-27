@@ -26,6 +26,7 @@ PUT _component_template/social_media_analyzer
       "analysis": {
         "analyzer": {
           "social_media": {
+            "type": "custom",
             "tokenizer": "classic",
             "filters": [
               "lowercase",
