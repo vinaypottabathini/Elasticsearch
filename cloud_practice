@@ -1,0 +1,2112 @@
+# Click the Variables button, above, to create your own variables.
+GET ${exampleVariable1} // _search
+{
+  "query": {
+    "${exampleVariable2}": {} // match_all
+  }
+}
+
+
+PUT /_cluster/settings
+{
+  "persistent":{
+    "cluster":{
+      "remote":{
+        "leader":{
+          "seeds":[
+            "127.0.0.1:9300"
+            ]
+            
+        }
+      }
+    }
+  }
+}
+
+
+GET /_remote/info
+
+
+PUT /_snapshot/my_repository
+{
+  "type": "fs",
+  "settings": {
+    "location": "my_backup_location"
+  }
+}
+GET olympic-events/_search
+
+GET olympic-events/_search?q=Metin Hizir Alako&filter_path=took,hits.hits._id,hits.hits._score
+
+
+
+
+GET _cat/master?v=true
+
+
+
+GET _cat/templates?v=true&s=order:desc,index_patterns
+
+
+
+GET /_cat/count/olympic-events?v=true
+
+GET /_cat/count?v=true
+
+
+GET _cat/ml/data_frame/analytics?v=true
+
+
+GET /_cat/fielddata?v=true&fields=Age
+
+
+
+GET /_cat/fielddata?v=true
+
+
+GET /_cat/health?v=true&ts=false
+
+GET /_cat/indices/olympic-events?v=true
+
+GET /_cat/indices/olympic-events?v=true&h=index,health,docs.count,pri.store.size
+
+
+
+GET /_cat/nodeattrs?v=true&h=attr,value
+
+
+
+GET /_cat/pending_tasks?v=true
+
+
+
+GET /_cat/plugins?v=true
+
+
+GET _cat/recovery?v=true&active_only=true
+
+
+GET /_cat/repositories?v=true
+
+GET /_cat/segments?v=true
+
+GET _cat/tasks?v=true
+
+GET _cat/tasks?v=true&h=action
+
+
+
+GET _cat/templates?v=true
+
+
+
+GET _cluster/allocation/explain
+
+
+
+GET /_cluster/health/olympic-events?level=shards
+
+GET /_nodes/stats/os,process
+
+
+GET _tasks
+
+GET _tasks/BeZC_rixTe2nU5by1IsF4A:423736
+
+
+GET _tasks?actions=*search&detailed
+
+
+
+GET /_data_stream/my-data-stream*/_stats?human=true&expand_wildcards=all,hidden
+
+
+
+PUT my-index/
+{
+  "mappings": {
+    "dynamic_templates": [
+      {
+        "geo_point": {
+             "mapping": {
+                "type" : "geo_point"
+             }
+        }
+      }
+    ]
+  }
+}
+
+
+
+GET my-index/_mapping
+
+
+GET /_analyze
+{
+  "analyzer" : "standard",
+  "text" : ["this is a test", "the second text"]
+}
+
+
+
+PUT music
+{
+  "mappings": {
+    "properties": {
+      "suggest": {
+        "type": "completion"
+      }
+    }
+  }
+}
+
+
+
+
+PUT music/_doc/1?refresh
+{
+  "suggest" : {
+    "input": [ "Nevermind", "Nirvana" ],
+    "weight" : 34
+  }
+}
+
+
+PUT music/_doc/1?refresh
+{
+  "suggest": [
+    {
+      "input": "Nevermind",
+      "weight": 10
+    },
+    {
+      "input": "Nirvana",
+      "weight": 3
+    }
+  ]
+}
+
+
+
+POST music/_search?pretty
+{
+  "suggest": {
+    "song-suggest": {
+      "prefix": "nir",        
+      "completion": {         
+          "field": "suggest"  
+      }
+    }
+  }
+}
+
+
+POST music/_search
+{
+  "_source": "suggest",     
+  "suggest": {
+    "song-suggest": {
+      "prefix": "nir",
+      "completion": {
+        "field": "suggest", 
+        "size": 5           
+      }
+    }
+  }
+}
+
+
+
+GET olympic-events/_search
+
+
+
+GET olympic-events/_mapping
+
+
+
+
+
+PUT _ingest/pipeline/split_games
+{
+  "description": "Spliting Games Field into year and season",
+  "processors": [
+    {
+      "split": {
+        
+        "field": "Games",
+         "separator": "\\s+"
+         
+      }
+    },
+    {
+      "script": {
+        "lang": "painless",
+        "source": """ 
+        ctx.year = ctx.Games[0];
+        ctx.season = ctx.Games[1];
+        
+        """
+      }
+    },
+    {
+      "remove": {
+        "field": "Games"
+      }
+    }
+    
+    
+    ]
+}
+
+POST _ingest/pipeline/split_games/_simulate
+{
+  "docs":[
+    {
+      "_source":{
+        "Games": "1947 Summer"
+      }
+    }
+    
+    ]
+}
+
+
+
+
+
+PUT olympic-events/_mapping
+{
+  "properties":{
+    ""
+  }
+}
+
+
+
+
+
+GET olympic-events/_mapping
+
+#?pipeline=split_games
+
+
+
+
+DELETE olympic-events-fixed
+
+GET olympic-events-fixed/_mapping
+
+PUT olympic-events-fixed
+
+POST _template/olympic-events
+{
+  "index_patterns": ["olympic-events-*"], 
+  "settings": {
+    "number_of_shards": 1, 
+    "number_of_replicas": 0
+  },
+  
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+        "athleteId":{
+          "type": "integer"
+        },
+        "age": {
+          "type": "short"
+        },
+        "city": {
+          "type": "text",
+          "fields": {
+            "keyword":{
+              "type":"keyword"
+            }
+          }
+        },
+        "event": {
+          "type": "text",
+          "fields": {
+            "keyword":{
+              "type":"keyword"
+            }
+          }
+        },
+        "games": {
+          "type": "keyword"
+        },
+        "height": {
+          "type": "short"
+        },
+
+        "medal": {
+          "type": "keyword"
+        },
+        "noc": {
+          "type": "keyword"
+        },
+        "athleteName": {
+          "type": "text",
+          "fields": {
+            "keyword":{
+              "type":"keyword"
+            }
+          }
+        },
+        "gender": {
+          "type": "keyword"
+        },
+        "sport": {
+          "type": "keyword"
+        },
+        "team": {
+          "type": "keyword"
+        },
+        "weight": {
+          "type": "short"
+        },
+        
+        "year": {
+          "type": "short"
+        },
+        
+        "season":{
+          "type": "keyword"
+        }
+      
+    }
+  }
+}
+
+GET _cat/tasks
+
+GET _cat/indices/olympic-events*?v=true&h=index,health,status,docs.count
+
+
+GET _cat/indices/olympic-events*?v=true 
+
+
+POST olympic-events-fixed/_refresh
+
+PUT olympic-events-fixed
+
+GET olympic-events-fixed/_mapping
+
+POST _reindex
+{
+  "source": {
+    "index": "olympic-events"
+  },
+  "dest":{
+     "index": "olympic-events-fixed",
+     "pipeline": "reconcile_fields"
+  }
+}
+
+DELETE olympic-events-fixed
+
+
+GET olympic-events/_mapping
+
+GET olympic-events-fixed/_mapping
+
+
+PUT _ingest/pipeline/reconcile_fields
+{
+  "processors":[
+    {
+      "rename":{
+        "field": "ID",
+        "target_field": "athleteId"
+      }
+    },
+    {
+      "rename":{
+        "field": "Age",
+        "target_field": "age"
+      }
+    },
+    {
+      "rename":{
+        "field": "Name",
+        "target_field": "athleteName"
+      }
+    },
+    {
+      "rename":{
+        "field": "City",
+        "target_field": "city"
+      }
+    },
+    {
+      "rename":{
+        "field": "Event",
+        "target_field": "event"
+      }
+    },
+    {
+      "rename":{
+        "field": "Height",
+        "target_field": "height"
+      }
+    },
+    {
+      "rename":{
+        "field": "Medal",
+        "target_field": "medal"
+      }
+    },
+    {
+      "rename":{
+        "field": "NOC",
+        "target_field": "noc"
+      }
+    },
+    {
+      "rename":{
+        "field": "Sex",
+        "target_field": "gender"
+      }
+    },
+    {
+      "rename":{
+        "field": "Sport",
+        "target_field": "sport"
+      }
+    },
+    {
+      "rename":{
+        "field": "Team",
+        "target_field": "team"
+      }
+    },
+    {
+      "rename":{
+        "field": "Weight",
+        "target_field": "weight"
+      }
+    },
+ 
+
+    {
+      "pipeline":{
+        "name": "split_games"
+        
+      }
+    }
+
+
+    ]
+}
+
+
+
+POST _ingest/pipeline/reconcile_fields/_simulate
+{
+  "docs":[
+    {
+      "_source":{
+        "NOC": "ARG",
+        "Sex": "M",
+        "City": "Los Angeles",
+        "Weight": "98",
+        "Name": "Ernesto Arturo Alas",
+        "Sport": "Shooting",
+        "Games": "1984 Summer",
+        "Event": "Shooting Men's Free Pistol, 50 metres",
+        "Height": "186",
+        "Team": "Argentina",
+        "ID": 2224,
+        "Medal": "NA",
+        "Age": "54"
+      }
+    }
+    ]
+
+}
+
+
+POST olympic-events/_delete_by_query
+{
+  "query": {
+    "multi_match": {
+      "query": "NA",
+      "fields": ["Height", "Weight", "Age"]
+    }
+  }
+}
+
+
+DELETE olympic-events-fixed
+
+
+
+
+
+GET olympic-events-fixed/_search
+{
+  "size": 0,
+  "aggs": {
+    "etype": {
+      "terms": {
+        "field": "sport",
+        "size": 100
+      }
+    }
+  }
+}
+
+
+
+GET olympic-events-fixed/_search
+{
+  "_source": ["event"], 
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "sport": "Gymnastics"
+          }
+          
+        }
+      ]
+    }
+  }
+}
+
+
+
+
+
+GET olympic-events-fixed/_search
+{
+  "size": 0, 
+  "query": {
+    "term":{
+      "sport": {
+        "value": "Gymnastics"
+      }
+    }
+  },
+  "aggs": {
+    "event_types": {
+      "terms": {
+        "field": "event.keyword",
+        "size": 100
+      }
+    }
+  }
+}
+
+GET olympic-events-fixed/_search
+GET olympic-events-fixed/_mapping
+
+
+GET olympic-events-fixed/_search
+{
+  "size": 0, 
+  "aggs": {
+    "male_avg_weights": {
+      "filter": {
+        "term": {
+          "gender": "M"
+        }
+      }, 
+      "aggs": {
+        "avg_weight": {
+          "avg": {"field": "weight"}
+        }
+      }
+    },
+  "female_avg_weights": {
+      "filter": {
+        "term": {
+          "gender": "F"
+        }
+      }, 
+      "aggs": {
+        "avg_weight": {
+          "avg": {"field": "weight"}
+        }
+      }
+    }
+
+    
+  }
+}
+
+
+
+
+
+GET olympic-events-fixed/_search
+{
+  "size": 0, 
+  "query": {
+    "term": {
+      "sport": {
+        "value": "Gymnastics"
+      }
+    }
+  },
+  "aggs": {
+    "genders": {
+      "terms": {
+        "field": "gender"
+      },
+      "aggs": {
+        "avg_weights": {
+          "avg": {
+            "field": "weight"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+
+
+GET olympic-events-fixed/_search
+{
+  "size": 0, 
+  "aggs": {
+    "events": {
+      "terms": {
+        "field": "event.keyword"
+      },
+      "aggs": {
+        "year_of_event": {
+          "terms": {
+            "field": "year",
+            "order": { "_key": "desc" }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+GET olympic-events-fixed/_search
+{
+  "size": 0, 
+  "aggs": {
+    "events": {
+      "terms": {
+        "field": "event.keyword"
+      },
+      "aggs": {
+        "first_year": {
+          "min": {
+            "field": "year"
+          }
+        }
+      }
+    },
+    "most_recent":{
+      "max_bucket": {
+        "buckets_path": "events>first_year"
+      }
+    }
+  }
+}
+
+
+
+
+GET olympic-events-fixed/_search
+{
+  "size": 50,
+  "_source": ["athleteName", "team", "sport", "age", "height", "weight", "gender"], 
+  
+  "script_fields": {
+    "weightLbs": {
+      "script": {
+         "lang":   "painless",
+        "source": "doc['weight'].value*2.2"
+      }
+    },
+    "bmi":{
+      "script":{
+         "lang":   "painless",
+        "source": "doc['weight'].value/Math.pow(doc['height'].value/100.0f, 2)"
+      }
+    }
+  },
+  
+  
+  
+  "sort": [
+    {
+      "height": {
+        "order": "desc"
+      }
+    }
+  ], 
+  "query": {
+    "term": {
+      "year": {
+        "value": "2016"
+      }
+    }
+  }
+}
+
+GET olympic-events-fixed/_search
+
+
+
+GET olympic-events-fixed/_search
+{
+
+  "size": 50,
+  "query":{
+    "term": {
+      "medal": {
+        "value": "Gold"
+      }
+    }
+  },
+  "sort":[
+    {
+      "age":{
+        "order": "desc"
+      }
+    }
+    
+    ]
+
+}
+
+
+
+GET olympic-events-fixed/_search
+{
+  "query": {
+    "bool": {
+      
+      "filter": [
+        {
+          "term": {
+            "sport": {
+              "value": "Swimming"
+            }
+          }
+        }
+      ], 
+      
+      "should": [
+        
+        {
+          "range": {
+            "weight": {
+              "gt": 60,
+              "lt": 70
+            }
+          }
+        },
+        {
+          "range": {
+            "age": {
+              "lt": 20
+            }
+          }
+        }
+      ],
+       "minimum_should_match": 1
+    }
+    
+  }
+}
+
+GET olympic-events-fixed/_search
+
+GET _cat/indices/olympic-noc-regions*?v=true
+
+GET _cat/indices/olympic-noc-regions*?v=true&h=index,status,health,docs.count
+
+
+PUT olympic-noc-regions/_settings
+{
+
+    "number_of_replicas": 0
+
+}
+
+
+
+
+DELETE _enrich/policy/olympic-noc-append
+
+PUT /_enrich/policy/olympic-noc-append
+{
+  "match": {
+    "indices": "olympic-events-fixed",
+    "match_field": "noc",
+    "enrich_fields": ["region" ,"notes"]
+  }
+}
+
+
+POST /_enrich/policy/olympic-noc-append/_execute
+
+DELETE /_ingest/pipeline/enrich-noc
+
+
+PUT /_ingest/pipeline/enrich-noc
+{
+  "processors" : [
+    {
+      "enrich" : {
+        "description": "Add NOC Details Pipeline",
+        "policy_name": "olympic-noc-append",
+        "field" : "noc",
+        "target_field": "nocDetails",
+        "max_matches": 1
+      }
+    }
+  ]
+}
+
+GET olympic-events-fixed/_search
+
+DELETE olympic-events-enriched
+
+PUT olympic-events-enriched
+
+
+PUT olympic-events-enriched/_mapping
+{
+  "dynamic": "true"
+}
+
+
+
+GET olympic-events-enriched/_mapping
+
+GET _cat/indices/olympic-events-*?v=true
+
+
+POST _reindex
+{
+  "source": {
+    "index": "olympic-events-fixed"
+  },
+  "dest": {
+    "index": "olympic-events-enriched",
+    "pipeline": "enrich-noc"
+  }
+  
+}
+
+GET olympic-events-fixed/_search
+
+GET olympic-events-enriched/_search
+
+
+GET _license
+###############################################################
+##################################################################
+######################################################################
+
+
+
+
+GET _search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+
+GET _license
+
+
+
+PUT leads_b2b-000001
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0
+  }
+}
+
+
+PUT leads_b2c-000001
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0
+  }
+}
+
+
+
+PUT sales_b2c-000001
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0
+  }
+}
+
+GET _cat/nodes?v
+
+GET _cat/indices?v
+
+GET _cat/health?v
+
+
+
+
+PUT _index_template/load
+{
+  "index_patterns": ["load-*"],
+  "template":{
+      "settings": {
+        "number_of_shards": 1,
+        "number_of_replicas": 0
+      }
+  }
+  
+}
+
+
+PUT _index_template/cpu
+{
+  "index_patterns": ["cpu-*"],
+  "template":{
+      "settings": {
+        "number_of_shards": 1,
+        "number_of_replicas": 0
+      }
+  }
+  
+}
+
+
+PUT _index_template/memory
+{
+  "index_patterns": [
+    "memory-*"
+  ],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    }
+  }
+}
+
+GET _index_template/memory
+
+
+PUT cpu-1
+
+GET _cat/indices/cpu*?v
+
+
+
+
+# Index Lifecycle Policy
+
+PUT _ilm/policy/audit_policy
+{
+  "policy": {
+    "phases": {
+      "hot": {
+        "actions": {}
+      },
+      "cold": {
+        "min_age": "7d",
+        "actions": {
+          "freeze": {},
+          "readonly":{}
+        }
+      },
+      "delete": {
+        "min_age": "365d",
+        "actions": {
+          "delete": {}
+        }
+      }
+    }
+  }
+}
+
+
+PUT _index_template/audit_template
+{
+  "index_patterns": ["audit-*"],
+  "template":{
+    "settings":{
+      "index.lifecycle.name": "audit_policy",
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    }
+  }
+}
+
+
+
+PUT audit-05-25-2023
+
+
+
+GET audit-05-25-2023
+
+
+PUT _ilm/policy/apache_policy
+{
+  "policy": {
+    "phases": {
+      "hot": {
+        "actions": {
+          "rollover": {
+            "max_primary_shard_size": "5gb"
+          },
+          "forcemerge":{
+            "max_number_of_segments": 1
+          },
+          "readonly":{}
+        }
+      },
+      "delete": {
+        "min_age": "90d",
+        "actions": {
+          "delete": {}
+        }
+      }
+    }
+  }
+}
+
+
+
+PUT _index_template/apache_template
+{
+  "index_patterns": ["apache_stream"],
+  "template":{
+    "settings":{
+      "index.lifecycle.name": "apache_policy",
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    }
+  }
+}
+
+
+GET flights/_search
+
+GET _search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+
+PUT _ilm/policy/apache_policy
+{
+  "policy": {
+    "phases": {
+      "hot": {
+        "actions": {
+          "rollover": {
+            "max_primary_shard_size": "5gb"
+          },
+          "forcemerge":{
+            "max_num_segments": 1
+          },
+          "readonly":{}
+        }
+      },
+      "delete": {
+        "min_age": "90d",
+        "actions": {
+          "delete": {}
+        }
+      }
+    }
+  }
+}
+
+
+
+PUT _index_template/apache_template
+{
+  "index_patterns": ["apache_stream"],
+  "data_stream": {},
+  "template":{
+    "settings":{
+      "index.lifecycle.name": "apache_policy",
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    }
+  }
+}
+
+DELETE apache_stream
+
+PUT _data_stream/apache_stream
+
+
+GET _data_stream/apache_stream
+
+
+
+GET flights/_search
+{
+  "track_total_hits": true
+}
+
+
+
+GET flights/_search
+{
+  "query": {
+    "range": {
+      "timestamp": {
+        "gte": "now-1d/d",
+        "lte": "now"
+      }
+    }
+  }
+}
+
+
+
+GET flights/_search
+{
+  "query": {
+    "range": {
+      "timestamp": {
+        "gte": "now/d",
+        "lte": "now"
+      }
+    }
+  }
+}
+
+
+
+GET flights/_search
+{
+  "query": {
+    "range": {
+      "timestamp": {
+        "gte": "now-2h",
+        "lte": "now"
+      }
+    }
+  }
+}
+
+GET ecommerce/_search
+
+
+GET ecommerce/_search
+{
+  "query": {
+    "term": {
+      "order_id": {
+        "value": "725676"
+      }
+    }
+  }
+}
+
+
+GET ecommerce/_search
+{
+  "query": {
+    "term": {
+      "customer_full_name": {
+        "value": "725676"
+      }
+    }
+  }
+}
+
+GET ecommerce/_search
+{
+  "_source": ["geoip.city_name"], 
+  "query": {
+    "terms": {
+      "customer_full_name.keyword": [
+        "Samir Garza",
+        "Selena Gibbs",
+        "Tariq Duncan"
+        
+      ]
+    }
+  }
+  
+}
+
+
+
+GET ecommerce/_search
+{
+  "_source": ["order_id"], 
+  "query": {
+    "range": {
+      "taxful_total_price": {
+        "gte": 10,
+        "lte": 20
+      }
+    }
+  }
+}
+
+
+GET shakespeare/_search
+
+
+
+GET shakespeare/_search?filter_path=hits.hits._source
+{
+  "query": {
+   "match": {
+     "text_entry": "love"
+   }
+  }
+}
+
+
+
+GET shakespeare/_search?filter_path=hits.hits._source
+{
+  "query": {
+   "match": {
+     "text_entry": "hate"
+   }
+  }
+}
+
+
+GET shakespeare/_search?filter_path=hits.hits._source.play_name,hits.hits._source.line_number
+{
+  "query": {
+   "match_phrase": {
+     "text_entry": "To Be, or Not to Be"
+   }
+  }
+}
+
+
+
+
+GET logs/_search
+
+#How Many Web Requests Originate from Either US or CN Where the Response Was Not 200?
+GET logs/_count?filter_path=count
+{
+  "query": {
+    "bool": {
+      
+      "should": [
+        {
+          "match": {
+            "geo.src": "US"
+          }
+        },
+        {
+          "match": {
+            "geo.src": "CN"
+          }
+        }
+      ],
+      "minimum_should_match": 1,
+      "must_not": [
+        {
+          "match": {
+            "response": 200
+          }
+        }
+      ]
+      
+    }
+  }
+}
+
+#How Many Web Requests Originate from Either US or CN Where the Response Was Not 200?
+GET logs/_count?filter_path=count
+{
+  "query": {
+    "bool": {
+      
+      "must": [
+        {
+          "terms": {
+            "geo.src": [
+              "US",
+              "CN"
+            ]
+          }
+        }
+      ], 
+      
+      "must_not": [
+        {
+          "match": {
+            "response": 200
+          }
+        }
+      ]
+      
+    }
+  }
+}
+
+
+
+
+
+GET logs/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "response": 200
+          }
+        }
+      ],
+      "should": [
+        {
+          "match": {
+            "tags.keyword": "success"
+          }
+        },
+        {
+          "match": {
+            "tags.keyword": "info"
+          }
+        },
+        {
+          "match": {
+            "tags.keyword": "security"
+          }
+        }
+      ],
+      "minimum_should_match": 2,
+      "must_not": [
+        {
+          "match": {
+            "machine.os": "win"
+          }
+        }
+      ]
+      
+    }
+  }
+}
+
+
+GET logs/_search
+{
+  "query": {
+    "match": {
+      "request": "rpm"
+    }
+  },
+  "highlight": {
+    "fields": {}
+  }
+}
+
+GET logs/_search
+
+
+#How Many Web Requests Were Made for apm-server RPM or DEB Files by Users Using an OS X Operating System?
+
+# below Wrong Answer
+GET logs/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "machine.os": "osx"
+          }
+        }
+      ],
+      "should": [
+          {
+          "match": {
+            "request": "deb"
+          }
+        },
+        {
+          "match": {
+            "request": "rpm"
+          }
+        }
+      ], 
+      "minimum_should_match": 1, 
+      "filter": [
+        {
+          "range": {
+            "bytes": {
+              "gt": 1024,
+              "lt": 8192
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+
+GET logs/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "machine.os": "osx"
+          }
+        },
+        
+        {
+          "match_phrase_prefix": {
+            "request": "apm-server"
+          }
+        },
+        
+        {
+          "terms": {
+            "extension": [
+              "rpm",
+              "deb"
+            ]
+          }
+        }
+        
+      ],
+
+
+      "filter": [
+        {
+          "range": {
+            "bytes": {
+              "gt": 1024,
+              "lt": 8192
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+
+
+
+GET _search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+POST filebeat-7.13.4/_async_search?wait_for_completion_timeout=0
+{
+  "size": 100,
+  "query": {
+    "match": {
+      "message": "SSH"
+    }
+  }
+}
+
+
+GET _async_search/FmlIcFlMVEJQU2FxaG4teXRyQ2RpbGccR2lrZ3NDSTlTc3FzM0FtLUlRcUxVUToxMzMxMw==
+
+
+
+DELETE _async_search/FmlIcFlMVEJQU2FxaG4teXRyQ2RpbGccR2lrZ3NDSTlTc3FzM0FtLUlRcUxVUToxMzMxMw==
+
+
+
+# es2 cluster remote Private IP 10.0.1.102 
+# es3 cluster remote Private IP 10.0.1.103
+
+
+PUT _cluster/settings
+{
+  "persistent": {
+    "cluster": {
+      "remote":{
+       
+        "cluster_2":{
+          "seeds": ["10.0.1.102:9300"]
+        },
+        
+        "cluster_3":{
+          "seeds": ["10.0.1.103:9300"]
+        }
+        
+      }
+    }
+  }
+}
+
+
+
+GET _cluster/settings
+
+GET cluster_2:metricbeat-7.13.4/_search
+
+GET cluster_3:metricbeat-7.13.4/_search
+
+
+GET metricbeat-7.13.4,cluster_2:metricbeat-7.13.4,cluster_3:metricbeat-7.13.4/_search
+
+
+
+
+############################################################
+###########################################################
+
+
+
+GET _search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+GET ecommerce/_search
+{
+  ""
+}
+
+# What Are the Total Lifetime Sales Before Tax?
+GET ecommerce/_search
+{
+  "size": 0,
+  "aggs":{
+    "tot_lifetime_sale_bt": {
+      "sum": {
+        "field": "taxless_total_price"
+      }
+    }
+  }
+}
+
+GET ecommerce/_search
+
+
+
+## How Many Orders Per Day Are There for Each Calendar Day?
+GET ecommerce/_search
+{
+  "size": 0,
+  "aggs":{
+    "orders_per_day": {
+      "date_histogram": {
+        "field": "order_date",
+        "calendar_interval": "day"
+      }
+    }
+  }
+}
+
+
+## What Are the Total Sales Before Tax Per Day for Each Calendar Day?
+GET ecommerce/_search
+{
+  "size": 0,
+  "aggs":{
+    "orders_per_day": {
+      "date_histogram": {
+        "field": "order_date",
+        "calendar_interval": "day"
+      },
+      "aggs":{
+        "tot_lifetime_sale_bt":{
+          "sum": {
+            "field": "taxless_total_price"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+
+
+# What Is the Total Distance Travelled per Day and on Which Day was the Most Distance Travelled?
+
+GET flights/_search
+{
+  "size": 0,
+  "aggs": {
+    "total_distance_travel_per_day": {
+      "date_histogram": {
+        "field": "timestamp",
+        "calendar_interval": "day"
+      },
+      "aggs": {
+        "per_day_total_dist": {
+          "sum": {
+            "field": "DistanceMiles"
+          }
+        }
+      }
+    },
+    "most_distance_traveled":{
+      "max_bucket": {
+        "buckets_path": "total_distance_travel_per_day>per_day_total_dist"
+      }
+    }
+    
+  }
+}
+
+
+
+# What Is the Cumulative Sum of Flight Delay Time in Minutes per Day?
+
+GET flights/_search
+{
+  "size": 0,
+  "aggs": {
+    "per_day_delay_time_min": {
+      "date_histogram": {
+        "field": "timestamp",
+        "calendar_interval": "day"
+      },
+      "aggs": {
+        "sum_of_delay": {
+          "sum": {
+            "field": "FlightDelayMin"
+          }
+        },
+        "cumlat_sum":{
+          "cumulative_sum": {
+            "buckets_path": "sum_of_delay"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+
+GET _search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+GET ecommerce/_search
+{
+  ""
+}
+
+# What Are the Total Lifetime Sales Before Tax?
+GET ecommerce/_search
+{
+  "size": 0,
+  "aggs":{
+    "tot_lifetime_sale_bt": {
+      "sum": {
+        "field": "taxless_total_price"
+      }
+    }
+  }
+}
+
+GET ecommerce/_search
+
+
+
+## How Many Orders Per Day Are There for Each Calendar Day?
+GET ecommerce/_search
+{
+  "size": 0,
+  "aggs":{
+    "orders_per_day": {
+      "date_histogram": {
+        "field": "order_date",
+        "calendar_interval": "day"
+      }
+    }
+  }
+}
+
+
+## What Are the Total Sales Before Tax Per Day for Each Calendar Day?
+GET ecommerce/_search
+{
+  "size": 0,
+  "aggs":{
+    "orders_per_day": {
+      "date_histogram": {
+        "field": "order_date",
+        "calendar_interval": "day"
+      },
+      "aggs":{
+        "tot_lifetime_sale_bt":{
+          "sum": {
+            "field": "taxless_total_price"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+
+
+# What Is the Total Distance Travelled per Day and on Which Day was the Most Distance Travelled?
+
+GET flights/_search
+{
+  "size": 0,
+  "aggs": {
+    "total_distance_travel_per_day": {
+      "date_histogram": {
+        "field": "timestamp",
+        "calendar_interval": "day"
+      },
+      "aggs": {
+        "per_day_total_dist": {
+          "sum": {
+            "field": "DistanceMiles"
+          }
+        }
+      }
+    },
+    "most_distance_traveled":{
+      "max_bucket": {
+        "buckets_path": "total_distance_travel_per_day>per_day_total_dist"
+      }
+    }
+    
+  }
+}
+
+
+
+# What Is the Cumulative Sum of Flight Delay Time in Minutes per Day?
+
+GET flights/_search
+{
+  "size": 0,
+  "aggs": {
+    "per_day_delay_time_min": {
+      "date_histogram": {
+        "field": "timestamp",
+        "calendar_interval": "day"
+      },
+      "aggs": {
+        "sum_of_delay": {
+          "sum": {
+            "field": "FlightDelayMin"
+          }
+        },
+        "cumlat_sum":{
+          "cumulative_sum": {
+            "buckets_path": "sum_of_delay"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+# What Is the Change in Average Ticket Price per Day and What Is the `min`, `max`, `avg`, and `sum` of That Change?
+
+GET flights/_search
+
+GET flights/_search
+{
+  "size": 0,
+  "aggs": {
+    "per_day_avg_tick_price": {
+      "date_histogram": {
+        "field": "timestamp",
+        "calendar_interval": "day"
+      },
+      "aggs": {
+        "avg_tick_price": {
+          "avg": {
+            "field": "AvgTicketPrice"
+          }
+        },
+        "change_in_derivative":{
+          "derivative": {
+            "buckets_path": "avg_tick_price"
+          }
+        }
+        
+      }
+    },
+    "chage_stats":{
+      "stats_bucket": {
+        "buckets_path": "per_day_avg_tick_price>change_in_derivative"
+      }
+    }
+  }
+}
+
+
+
+GET flights
+
+
+
+GET shakespeare/_search
+
+
+GET shakespeare/_search
+{
+  "from": 0,
+  "size": 25,
+  "query": {
+    "match": {
+      "text_entry": "life"
+    }
+  },
+  "highlight": {
+    "fields": {
+      "text_entry": {}
+    }
+  },
+  "sort": [
+    {
+      "_score": {
+        "order": "desc"
+      }
+    }
+  ]
+}
+
+
+
+
+GET shakespeare/_search
+{
+  "from": 0,
+  "size": 25,
+  "query": {
+    "match": {
+      "text_entry": "death"
+    }
+  },
+  "highlight": {
+    "pre_tags": "<b>",
+    "post_tags": "</b>", 
+    "fields": {
+      "text_entry": {}
+    }
+  },
+  "sort": [
+    {
+      "play_name.keyword":{}
+    },
+    {
+      "speaker.keyword":{}
+    },
+    {
+      "_score": {
+        "order": "desc"
+      }
+    }
+  ]
+}
+
+
+
+
+GET shakespeare/_search
+{
+  "from": 0,
+  "size": 10, 
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "term": {
+            "speaker.keyword": "THESEUS"
+          }
+        }
+      ],
+      "should": [
+        {
+          "match": {
+            "text_entry": "life"
+          }
+        },
+        {
+          "match": {
+            "text_entry": "death"
+          }
+        }
+      ],
+      "minimum_should_match": 1
+    }
+  },
+  "highlight": {
+    "fields": {
+      "speaker.keyword": {
+        "pre_tags": "<b>",
+        "post_tags": "</b>"
+      },
+      "text_entry": {
+        "pre_tags": "<mark>",
+        "post_tags": "</mark>"
+      }
+    }
+  },
+  "sort": [
+    {
+      "line_id": {
+        "order": "desc"
+      }
+    }
+  ]
+  
+}
+
+
+#Alias 1: The alias sample_data should be applied to the kibana_sample_data_ecommerce, kibana_sample_data_flights, and kibana_sample_data_logs indices.
+
+POST _aliases
+{
+  "actions": [
+    {
+      "add": {
+        "index": "kibana_sample_data_ecommerce",
+        "alias": "sample_data"
+      }
+    },
+    {
+      "add": {
+        "index": "kibana_sample_data_flights",
+        "alias": "sample_data"
+      }
+    },
+    {
+      "add": {
+        "index": "kibana_sample_data_logs",
+        "alias": "sample_data"
+      }
+    }
+  ]
+}
+
+GET sample_data
+
+POST _aliases
+{
+  "actions": [
+    {
+      "add": {
+        "index": "kibana_sample_data*",
+        "alias": "sample_data"
+      }
+    }
+
+  ]
+}
+
+
+#Alias 2: The alias othello should filter documents, where the play_name.keyword field is "Othello" and be applied to the shakespeare index.
+
+
+POST _aliases
+{
+  "actions": [
+    {
+      "add": {
+        "index": "shakespeare",
+        "alias": "othello",
+        "filter": {
+          "term": {
+            "play_name.keyword": "Othello"
+          }
+        }
+      }
+    }
+  ]
+}
+
+
+GET shakespeare/_search
+
+GET othello/_search
+
+
+#Alias 3:
+/*
+The component template sample_data should be configured to apply the sample_data alias.
+The sample_data_bank index template should match any index that starts with "accounts-".
+The sample_data_bank index template should be composed of the sample_data component template.
+The sample_data_bank index template should also include the bank alias.
+The sample_data_bank index template should be configured to create indices with one primary and zero replica shards.
+
+*/
+
+PUT _component_template/sample_data
+{
+  "template":{
+    "aliases": {
+      "sample_data": {}
+    }
+  }
+}
+
+
+PUT _index_template/sample_data_bank
+{
+  "index_patterns": ["accounts-*"],
+  "template":{
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "aliases": {
+    "bank": {}
+  }
+    
+  }, 
+  "composed_of": ["sample_data"]
+
+}
+
+
+
+
+
+
+
+
+
+
+
