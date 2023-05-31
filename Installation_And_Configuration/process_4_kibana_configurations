@@ -16,4 +16,12 @@ server.host : "private_ip_address_of_master_1_node"
 
 # close the file
 
+
+# start the kibana
+$ systemctl start kibana
+
+
+# check the logs of kibana. Actually it can find logs of kibana as below
+$ less /var/log/messages
+
 # thats it done!
