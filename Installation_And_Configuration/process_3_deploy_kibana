@@ -3,6 +3,8 @@ $ sudo su -
 
 
 # Import GPG KEY licence if not imported
+# RPM Command
+$ rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
 
 # Now download kibana
 $ curl -O https://artifacts.elastic.co/downloads/kibana/kibana-7.6.0-x84_64.rpm
