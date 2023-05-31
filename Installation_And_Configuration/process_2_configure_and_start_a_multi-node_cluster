@@ -117,6 +117,40 @@ $ systemctl start elasticsearch
 
 
 # We can check the logs as it starts up to make sure that we don't have any typos anywhere. If we do, we'll go ahead and figure those out and fix them as we need to.
+$ less /var/log/elasticsearch/my_cluster.log                       # my_cluster is name of the cluster
+
+# check vaguely
+[master-1] started
+[master-1] licence
+[master-1] added {{data-1}......
+[master-1] added {{data-2}......
+
+# above lines means that these nodes properly found each other. Our discovery seed host was configured correctly. 
+# close the log file
+
+
+# As we're binding to both local host and site-local addresses, let's hit localhost:9200 without any path so we can just see the default root path for Elasticsearch is just going to give us some basic version information.
+$ curl localhost:9200
+
+# This just let's us know that Elasticsearch is up and running, and it's receiving HTTP requests.
+
+# next the best way to get information through the APIs, especially when you're in a terminal interface like this, is to use what's called the cat APIs.
+$ curl localhost:9200/_cat                              # will list of all the cat APIs available to us
+
+
+# for nodes infomation
+$ curl localhost:9200/_cat/nodes?v 
+
+
+# for health infomation
+$ curl localhost:9200/_cat/health?v 
+
+
+
+# Done
+
+
+
 
 
 
