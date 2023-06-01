@@ -34,6 +34,7 @@ node.name : data-1
 
 # for data node add custom attributes, key-value pairs that you can attach to a node, and you can use those attributes later on to make decisions on routing, or various aspects of how you allocate your data and how you recover your data from Elasticsearch.
 # So, we're going to have a temperature attribute on data-1 and data-2. One's going to be hot. The other's going to be warm. But, for the master-1 node, we don't need any custom attributes
+## If in case it's multi cluster setup here you can set the zone like ----> node.attr.zone: 1 (or 2 or 3)
 # change already commented --- node.attr.rack  --> node.attr.temp or write new variable
 node.attr.temp : hot
 
