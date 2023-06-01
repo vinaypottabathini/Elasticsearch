@@ -66,6 +66,7 @@ cluster.initial_master_nodes : ["master-1"]
 
 # Various Section
 # we're going to add some configuration items like list out all of the node roles and essentially just define the roles of this host.
+# in case if you have only one master node then set all roles to true. 
 
 #NODE-1
 node.master: true
