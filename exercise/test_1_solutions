@@ -1,0 +1,1226 @@
+
+
+
+
+GET _cat/indices?h=status,health,index&v
+
+
+
+GET _cat/indices/shakespeare?v&h=pri,rep
+
+
+
+GET _cat/allocation/explain
+
+
+GET _cluster/allocation/explain
+
+
+
+PUT shakespeare/_settings
+{
+  "index":{
+    "number_of_replicas": 0
+  }
+}
+
+
+
+
+POST /_license/start_trial?acknowledge=true
+
+
+
+PUT /_snapshot/sample_data?verify=false
+{
+  "type": "fs",
+  "settings": {
+    "location": "/mnt/backups/sample_data"
+  }
+}
+
+
+
+
+PUT /_slm/policy/nightly
+{
+  "schedule": "0 0 2 * * ?", 
+  "name": "<nightly-{now/d}>", 
+  "repository": "sample_data", 
+  "config": { 
+    "indices": ["kibana_sample_data_*"], 
+    "ignore_unavailable": false,
+    "include_global_state": false
+  },
+  "retention": { 
+    "min_count": 7, 
+    "max_count": 30 
+  }
+}
+
+
+
+
+
+
+PUT /_snapshot/shakespeare?verify=false
+{
+  "type": "fs",
+  "settings": {
+    "location": "/mnt/backups/shakespeare",
+    "indices": ["shakespeare"]
+  }
+}
+
+GET /_snapshot/shakespeare
+
+GET /_snapshot/shakespeare/original
+
+DELETE /_snapshot/shakespeare/original
+
+PUT /_snapshot/shakespeare/original
+{
+  "indices": "shakespeare"
+}
+
+
+GET _snapshot/sample_data/duplicate
+
+PUT _snapshot/sample_data/duplicate
+
+GET _snapshot/shakespeare/*
+
+
+
+PUT _ilm/policy/alerts_policy
+{
+  "policy": {
+    "phases": {
+      "hot": {
+        "actions": {
+          "rollover": {
+            "max_primary_shard_size": "10gb"
+          },
+          "forcemerge": {
+            "max_num_segments": 1
+          },
+          "readonly": {}
+        }
+      },
+      "cold": {
+        "min_age": "30d",
+        "actions": {
+          "searchable_snapshot": {
+            "snapshot_repository": "sample_data"
+          }
+        }
+      },
+      "delete": {
+        "min_age": "180d",
+        "actions": {
+          "delete": {}
+        }
+      }
+    }
+  }
+}
+
+
+PUT _component_template/strings_as_keywords
+{
+  
+  "template": {
+    "mappings": {
+      "dynamic_templates":[
+          {
+            "strings_as_keywords":{
+              "match_mapping_type": "string",
+              "mapping":{
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          }
+        ]
+    }
+  }
+}
+
+
+PUT _component_template/shards
+{
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    }
+  }
+}
+
+
+
+
+
+PUT _index_template/alerts_template
+{
+  "index_patterns": ["alerts_stream"],
+  "data_stream":{},
+  "composed_of": ["strings_as_keywords", "shards"],
+  "template":{
+    "settings":{
+      "index.lifecycle.name": "alerts_policy"  
+    }
+    
+  }
+}
+
+
+
+
+PUT _data_stream/alerts_stream
+
+
+
+#####
+
+
+
+
+PUT _ingest/pipeline/migrate_accounts
+{
+  "processors": [
+    {
+      "remove": {
+        "field": ["account_number", "age", "gender"]
+      }
+    },
+    {
+      "set": {
+        "field": "tos_ack",
+        "if": "ctx.state == 'VA'", 
+        "value": false
+      }
+    },
+    {
+      "set": {
+        "field": "tos_ack",
+        "if": "ctx.state != 'VA'", 
+        "value": true
+      }
+    }
+    
+
+  ]
+}
+
+
+GET accounts/_search
+{
+  "track_total_hits": true
+}
+
+POST _reindex
+{
+  "source": {
+    "remote": {
+      "host": "http://10.0.1.102:9200",
+      "username": "elastic",
+      "password": "elastic_acg"
+    },
+    "index": "accounts"
+  },
+  "dest": {
+    "index": "accounts",
+    "pipeline": "migrate_accounts"
+  }
+  
+}
+
+DELETE accounts
+
+PUT accounts
+{
+  "mappings" : {
+      "properties" : {
+      
+        "address" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        },
+       
+        "balance" : {
+          "type" : "double"
+        },
+        "city" : {
+          "type" : "keyword"
+        },
+        "email" : {
+          "type" : "keyword"
+        },
+        "employer" : {
+          "type" : "keyword"
+        },
+        "firstname" : {
+          "type" : "keyword"
+        },
+
+        "lastname" : {
+          "type" : "keyword"
+        },
+        "state" : {
+          "type" : "keyword"
+        },
+        "tos_ack":{
+          "type": "boolean"
+        }
+      }
+    },
+    "settings":{
+      "index":{
+        "number_of_shards": 1,
+        "number_of_replicas": 0
+      }
+    }
+}
+
+
+
+GET shakespeare
+
+POST _reindex
+{
+  "source": {
+    "index": "shakespeare"
+  },
+  "dest": {
+    "index": "shakespeare_refactored"
+  }
+}
+
+GET shakespeare_refactored/_search
+{
+  "track_total_hits": true
+}
+
+DELETE shakespeare
+
+PUT shakespeare_refactored
+{
+    "mappings" : {
+      "properties" : {
+        "line_id" : {
+          "type" : "long"
+        },
+        "line_number" : {
+          "type" : "keyword"
+        },
+        "play_name" : {
+          "type" : "keyword"
+        },
+        "speaker" : {
+          "type" : "keyword"
+        },
+        "speech_number" : {
+          "type" : "long"
+         
+        },
+        "text_entry" : {
+          "type" : "text"
+        },
+        "type" : {
+          "type" : "keyword"
+        }
+      }
+    },
+    "settings": {
+      "analysis": {
+        "analyzer": {
+          "default": {
+            "tokenizer": "classic",
+            "filters": ["english_stop"]
+          }
+        },
+        "filter": {
+          "english_stop":{
+            "type": "stop",
+            "stopwords": "_english_",
+            "ignore_case": true
+          }
+        }
+      }, 
+      "index":{
+        "number_of_shards": 1,
+        "number_of_replicas": 0
+      }
+    }
+}
+
+
+POST _aliases
+{
+  "actions": [
+    {
+      "add": {
+        "index": "shakespeare_refactored",
+        "alias": "shakespeare"
+      }
+    }
+  ]
+}
+
+
+
+
+POST shakespeare/_update_by_query
+{
+  "query": {
+    "match_phrase": {
+      "play_name": "A Winners Tale"
+    }
+  },
+  "script": {
+    "source": "ctx._source.play_name= 'A Winter\\'s Tale' ",
+    "lang": "painless"
+  }
+}
+
+
+
+GET shakespeare/_search
+{
+  "query": {
+    "match_phrase": {
+      "play_name": "A Winter's Tale"
+    }
+  }
+}
+
+
+
+
+
+GET kibana_sample_data_ecommerce/_settings
+
+
+DELETE ecommerce_fixed
+PUT ecommerce_fixed
+{
+  "mappings" : {
+      "properties" : {
+        "category" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "currency" : {
+          "type" : "keyword"
+        },
+        "customer_birth_date" : {
+          "type" : "date"
+        },
+        "customer_first_name" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        },
+        "customer_full_name" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        },
+        "customer_gender" : {
+          "type" : "keyword"
+        },
+        "customer_id" : {
+          "type" : "keyword"
+        },
+        "customer_last_name" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        },
+        "customer_phone" : {
+          "type" : "keyword"
+        },
+        "day_of_week" : {
+          "type" : "keyword"
+        },
+        "day_of_week_i" : {
+          "type" : "integer"
+        },
+        "email" : {
+          "type" : "keyword"
+        },
+        "event" : {
+          "properties" : {
+            "dataset" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "geoip" : {
+          "properties" : {
+            "city_name" : {
+              "type" : "keyword"
+            },
+            "continent_name" : {
+              "type" : "keyword"
+            },
+            "country_iso_code" : {
+              "type" : "keyword"
+            },
+            "location" : {
+              "type" : "geo_point"
+            },
+            "region_name" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "manufacturer" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "order_date" : {
+          "type" : "date"
+        },
+        "order_id" : {
+          "type" : "keyword"
+        },
+        "products" : {
+          "type": "nested", 
+          "properties" : {
+            "_id" : {
+              "type" : "text",
+              "fields" : {
+                "keyword" : {
+                  "type" : "keyword",
+                  "ignore_above" : 256
+                }
+              }
+            },
+            "base_price" : {
+              "type" : "half_float"
+            },
+            "base_unit_price" : {
+              "type" : "half_float"
+            },
+            "category" : {
+              "type" : "text",
+              "fields" : {
+                "keyword" : {
+                  "type" : "keyword"
+                }
+              }
+            },
+            "created_on" : {
+              "type" : "date"
+            },
+            "discount_amount" : {
+              "type" : "half_float"
+            },
+            "discount_percentage" : {
+              "type" : "half_float"
+            },
+            "manufacturer" : {
+              "type" : "text",
+              "fields" : {
+                "keyword" : {
+                  "type" : "keyword"
+                }
+              }
+            },
+            "min_price" : {
+              "type" : "half_float"
+            },
+            "price" : {
+              "type" : "half_float"
+            },
+            "product_id" : {
+              "type" : "long"
+            },
+            "product_name" : {
+              "type" : "text",
+              "fields" : {
+                "keyword" : {
+                  "type" : "keyword"
+                }
+              },
+              "analyzer" : "english"
+            },
+            "quantity" : {
+              "type" : "integer"
+            },
+            "sku" : {
+              "type" : "keyword"
+            },
+            "tax_amount" : {
+              "type" : "half_float"
+            },
+            "taxful_price" : {
+              "type" : "half_float"
+            },
+            "taxless_price" : {
+              "type" : "half_float"
+            },
+            "unit_discount_amount" : {
+              "type" : "half_float"
+            }
+          }
+        },
+        "sku" : {
+          "type" : "keyword"
+        },
+        "taxful_total_price" : {
+          "type" : "half_float"
+        },
+        "taxless_total_price" : {
+          "type" : "half_float"
+        },
+        "total_quantity" : {
+          "type" : "integer"
+        },
+        "total_unique_products" : {
+          "type" : "integer"
+        },
+        "type" : {
+          "type" : "keyword"
+        },
+        "user" : {
+          "type" : "keyword"
+        }
+      }
+    },
+    "settings": {
+      "index":{
+        "number_of_shards": 1,
+        "number_of_replicas": 0
+      }
+    }
+}
+
+
+
+POST _reindex
+{
+  "source":{
+    "index": "kibana_sample_data_ecommerce"
+  },
+  "dest":{
+    "index": "ecommerce_fixed"
+  }
+}
+
+
+GET _cat/indices/?v
+
+GET ecommerce_fixed/_search
+{
+  "track_total_hits": true
+}
+
+
+DELETE kibana_sample_data_ecommerce
+
+
+POST _aliases
+{
+  "actions": [
+    {
+      "add": {
+        "index": "ecommerce_fixed",
+        "alias": "kibana_sample_data_ecommerce"
+      }
+    },
+    {
+      "add": {
+        "index": "ecommerce_fixed",
+        "alias": "ecommerce"
+      }
+    }
+  ]
+}
+
+
+
+
+
+
+GET ecommerce/_search
+
+
+GET ecommerce/_search
+{
+  "from": "{{from}}{{^from}}0{{/from}}",
+  "size": "{{size}}{{^size}}25{{/size}}",
+  "query": {
+    "nested": {
+      "path": "products",
+      "query": {
+        "match": {
+          "products.product_name": "{{search_term}}"
+        }
+      }
+    }
+  },
+  "highlight": {
+    "fields": {
+      "products.product_name":{
+        "pre_tags": ["<mark>"],
+        "post_tags": ["</mark>"]
+      }
+    }
+  },
+  "sort": [
+    {
+      "geoip.continent_name": {
+        "order": "desc"
+      }
+    },
+    {
+      "geoip.city_name":{
+        "order": "desc"
+      }
+    },
+    "_score"
+  ]
+}
+
+
+PUT _scripts/products
+{
+  "script":{
+    "lang": "mustache",
+    "source": {
+        "from": "{{from}}{{^from}}0{{/from}}",
+        "size": "{{size}}{{^size}}25{{/size}}",
+        "query": {
+          "nested": {
+            "path": "products",
+            "query": {
+              "match": {
+                "products.product_name": "{{search_term}}"
+              }
+            }
+          }
+  },
+        "highlight": {
+          "fields": {
+            "products.product_name":{
+              "pre_tags": ["<mark>"],
+              "post_tags": ["</mark>"]
+            }
+          }
+  },
+        "sort": [
+          {
+            "geoip.continent_name": {
+              "order": "desc"
+            }
+          },
+          {
+            "geoip.city_name":{
+              "order": "desc"
+            }
+          },
+          "_score"
+  ]
+    }
+  }
+}
+
+
+
+
+
+POST _render/template
+{
+  "id": "products",
+  "params": {
+    "from": 0,
+    "size": 25,
+    "search_term": "belt"
+  }
+}
+
+
+
+
+GET ecommerce/_search/template
+{
+  "id": "products",
+  "params": {
+    "from": 0,
+    "size": 25,
+    "search_term": "belt"
+  }
+}
+
+
+
+GET ecommerce/_mapping
+
+
+
+
+
+
+GET filebeat-7.13.4/_search
+
+GET filebeat-7.13.4/_mapping
+
+PUT _cluster/settings
+{
+  "persistent": {
+    "cluster": {
+      "remote":{
+        "c2":{
+          "seeds": ["10.0.1.102:9300", "10.0.1.103:9300", "10.0.1.104:9300"]
+        }
+      }
+    }
+  }
+}
+
+
+
+GET  filebeat-7.13.4,c2:filebeat-7.13.4/_search
+{
+  "from": 0,
+  "size": 100,
+  "query":{
+    "bool": {
+      "must": [
+        {
+          "term": {
+            "event.module": {
+              "value": "system"
+            }
+          }
+        },
+        {
+          "term": {
+            "log.file.path": {
+              "value": "/var/log/secure"
+            }
+          }
+        },
+        {
+          "term": {
+            "process.name": {
+              "value": "sshd"
+            }
+          }
+        }
+      ],
+      "should": [
+        {
+          "match_phrase": {
+            "message": "invalid user"
+          }
+        },
+        {
+          "match_phrase": {
+            "message": "authentication failure"
+          }
+        },
+        {
+          "match_phrase": {
+            "message": "failed password"
+          }
+        }
+      ],
+      "minimum_should_match": 1,
+      "must_not": [
+        {
+          "match": {
+            "message": "cloud_user"
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+
+
+POST filebeat-7.13.4/_async_search?wait_for_completion_timeout=0
+{
+  "query": {
+    "match": {
+      "message": "cloud_user"
+    }
+  }
+}
+
+POST /_license/start_trial?acknowledge=true
+
+
+GET _async_search/FjNDbk9mRzNkUk95R24xandCMlprSUEcaEVXZjlDekdRQnVYY29lQWowTWU2dzo1NzMwOQ==
+
+
+
+GET ecommerce/_search
+
+
+GET _cluster/stats
+
+
+PUT /_security/privilege
+{
+  "myapp": {
+    "read": {
+      "actions": [ 
+        "data:read/*" , 
+        "action:login" ],
+        "metadata": { 
+          "description": "Read access to myapp"
+        }
+      }
+    }
+}
+
+POST /_security/role/us_customers_read
+{
+ 
+  "indices": [
+    {
+      "names": ["ecommerce"],
+      "privileges": ["read"],
+      "field_security":{
+        "grant": ["customer_full_name", "email", "customer_phone", "customer_id" ]
+      },
+      "query": {
+        "term": {
+          "geoip.country_iso_code":{
+            "value": "US"}
+        }
+      }
+    }
+  ]
+}
+
+
+
+POST _security/user/mbender
+{
+   "password" : "kUwn7euAj45t",
+  "roles" : [ "us_customers_read", "kibana_user" ],
+  "full_name" : "Michael Bender",
+  "email" : "mbender@company.com"
+
+}
+
+
+GET ecommerce/_search
+
+GET shakespeare
+
+
+
+POST _snapshot/shakespeare/original/_restore
+{
+  "ignore_unavailable": true,
+  "indices": "shakespeare",
+   "rename_pattern": "(.+)",
+   "rename_replacement": "$1_original"
+}
+
+
+
+GET _cat/indices/sh*?v
+
+
+GET _snapshot/shakespeare/original
+
+POST _snapshot/shakespeare/original/_mount
+{
+  "index": "shakespeare",
+  "renamed_index": "shakespeare_original"
+  
+}
+
+
+GET _snapshot/_status
+
+
+
+### Aggregations
+
+POST /_license/start_trial?acknowledge=true
+
+
+GET flights/_search
+{
+  "size": 0,
+  "aggs": {
+    "unique_dest_locs": {
+      "cardinality": {
+        "field": "DestLocation"
+      }
+    }
+  }
+}
+
+ 
+GET flights/_search
+{
+  "size": 0,
+  "aggs": {
+    "dest_weather": {
+      "terms": {
+        "field": "DestWeather",
+        "size": 3
+      }
+    }
+  }
+}
+ 
+ 
+ 
+ GET _cat/indices?v
+ 
+ GET crop_yields/_search
+ {
+   "query": {
+     "match": {
+       "country": "United States"
+     }
+   }
+ }
+ 
+GET crop_yields/_search
+{
+  "size": 0,
+  "query": {
+    "range": {
+      "year": {
+        "gte": 1980,
+        "lte": 1990
+      }
+    }
+  },
+  "aggs": {
+    "countries": {
+      "terms": {
+        "field": "country",
+        "size": 5,
+        "order": {
+          "avg_yield": "desc"
+        }
+      },
+      "aggs": {
+        "avg_yield": {
+          "avg": {
+            "field": "rye"
+          }
+        }
+     
+      }
+    }
+  }
+}
+ 
+
+
+
+
+GET crop_yields/_search
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "country": "United States"
+          }
+        },
+        {
+          "range": {
+            "year": {
+              "gte": 2000
+            }
+          }
+        }
+      ]
+    }
+  },
+  "aggs": {
+    "total_maize": {
+      "sum": {
+        "field": "maize"
+      }
+    }
+  }
+}
+ 
+ 
+ 
+ 
+ 
+ GET logs/_search
+ 
+GET logs/_search
+{
+  "size": 0,
+  "aggs": {
+    "per_day": {
+      "date_histogram": {
+        "field": "timestamp",
+        "calendar_interval": "day"
+      },
+      "aggs": {
+        "sum_of_bytes": {
+          "sum": {
+            "field": "bytes"
+          }
+        },
+        "bytes_derivative":{
+          "derivative": {
+            "buckets_path": "sum_of_bytes"
+          }
+        }
+      }
+    },
+    "all_stats":{
+      "stats_bucket": {
+        "buckets_path": "per_day>bytes_derivative"
+      }
+    }
+  }
+}
+ 
+ 
+ 
+ GET _cat/indices?v
+ 
+ 
+ 
+################################################################################################################################################
+##########################################################  cluster 2 below  ###################################################################
+
+
+
+
+
+
+GET _cat/nodes?v
+
+GET _cat/indices?h=status,health,index&v
+
+
+
+GET _cat/indices/shakespeare?v&h=pri,rep
+
+
+
+GET _cat/allocation/explain
+
+
+GET _cluster/allocation/explain
+
+
+GET _refresh
+
+
+PUT accounts/_settings
+{
+  "index":{
+    "number_of_replicas": 1,
+    "routing.allocation.require._name": null
+  }
+}
+
+
+
+
+
+
+
+GET accounts/_mapping
+
+
+
+DELETE accounts
+
+
+
+
+GET filebeat-7.13.4/_search
+
+
+
+GET accounts/_search
+
+
+
+
+
+PUT _cluster/settings
+{
+  "persistent": {
+    "cluster": {
+      "remote":{
+        "c1":{
+          "seeds": "10.0.1.101:9300"
+        }
+      }
+    }
+  }
+}
+
+
+GET _cat/indices?v&h=index
+
+POST /_license/start_trial?acknowledge=true
+
+
+PUT accounts/_ccr/follow
+{
+  "remote_cluster": "c1",
+  "leader_index": "accounts"
+}
+
+
+
+
+PUT _ccr/auto_follow/alerts
+{
+  "remote_cluster": "c1",
+  "leader_index_patterns": "*alerts_stream*",
+  "follow_index_pattern": "alerts_stream"
+}
+
+
+
+
+
+
+
+ 
