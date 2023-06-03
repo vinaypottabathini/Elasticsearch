@@ -2105,8 +2105,34 @@ PUT _index_template/sample_data_bank
 
 
 
+#### Update and Update_by_query
+
+POST bank/_update/100/
+{
+  "doc": {
+    "address": "1600 Pennsylvania Ave NW",
+    "city": "Washington",
+    "state": "DC"
+  }
+}
 
 
-
+POST bank/_update_by_query
+{
+  "query":{
+    "match":{
+      "account_number": 100
+    }
+  },
+  "script":{
+    "lang": "painless",
+    "source":""" 
+      ctx._source.address= '1600 Pennsylvania Ave NW';
+      ctx._source.city = 'Washington';
+      ctx._source.state = 'DC';
+    
+    """
+  }
+}
 
 
