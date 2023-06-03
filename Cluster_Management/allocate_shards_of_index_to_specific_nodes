@@ -118,6 +118,11 @@ PUT logs-01/_settings
 
 
 
+##### Update
+Correct way of restarting
+
+elasticsearch$ pkill -F pid
+elasticsearch$ ./bin/elasticsearch -d -p pid
 
 
 
