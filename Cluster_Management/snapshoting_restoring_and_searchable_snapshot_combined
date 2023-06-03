@@ -71,3 +71,51 @@ POST /_snapshot/accounts/accounts_test_backup/_mount
 
 
 GET _cat/indices?v
+
+
+############### Example below with bank index ###################
+# path permissions 
+chown elasticsearch:elasticsearch /home/repo_path
+
+
+PUT _snapshot/my_repo
+{
+  "type": "fs",
+  "settings": {
+      "location": "/home/repo_path"
+  }
+}
+
+
+PUT _snapshot/my_repo/bank-1?wait_for_completion=true
+{
+  "indices": "bank"
+}
+
+
+DELETE bank
+
+
+POST _snapshot/my_repo/bank-1/_restore
+{
+  "indices": "bank"
+}
+
+
+----
+
+PUT _snapshot/my_repo/bank-1?wait_for_completion=true
+{
+  "indices": "accounts-*"
+}
+
+
+POST _snapshot/my_repo/bank-1/_restore
+{
+  "indices": "accounts-*",
+  "rename_pattern": "(.+)",
+  "rename_replacement": "$1_restored"
+}
+
+
+
