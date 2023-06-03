@@ -66,3 +66,19 @@ Ensure that all primary shards are assigned and all replica shards remain unassi
 Use the Kibana console tool to execute the following:
 
 GET _cat/shards?v
+
+
+
+
+
+
+
+
+##### Update
+Correct way of restarting
+
+elasticsearch$ pkill -F pid
+elasticsearch$ ./bin/elasticsearch -d -p pid
+
+
+
