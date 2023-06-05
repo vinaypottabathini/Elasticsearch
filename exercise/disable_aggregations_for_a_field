@@ -6,7 +6,7 @@ PUT your_index/_mapping
   "properties": {
     "your_field": {
       "type": "text",
-      "aggregatable": false
+      "doc_values": false
     }
   }
 }
