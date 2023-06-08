@@ -1,0 +1,40 @@
+
+
+
+PUT _enrich/policy/user_policy
+{
+  "match":{
+    "indices": "merge1",
+    "match_field": "user_id",
+    "enrich_fields": ["user_id", "name"]
+    
+  }
+}
+
+
+
+POST /_enrich/policy/user_policy/_execute
+
+DELETE _ingest/pipeline/user_lookup
+
+PUT _ingest/pipeline/user_lookup
+{
+  "processors": [
+    {
+      "enrich":{
+         "policy_name": "user_policy",
+         "field" : "user_id",
+        "target_field": "",
+        "max_matches": "1"
+      }
+    }
+  ]
+}
+
+
+
+POST merge2/_update_by_query?pipeline=user_lookup
+
+
+
+GET merge2/_search
