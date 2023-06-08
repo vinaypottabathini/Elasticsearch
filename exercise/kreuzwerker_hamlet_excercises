@@ -1,0 +1,3044 @@
+
+
+GET _cat/indices?h=status,health,index&v
+
+
+
+GET _cat/indices/shakespeare?v&h=pri,rep
+
+
+
+GET _cat/allocation/explain
+
+
+GET _cluster/allocation/explain
+
+
+
+PUT shakespeare/_settings
+{
+  "index":{
+    "number_of_replicas": 0
+  }
+}
+
+
+
+
+POST /_license/start_trial?acknowledge=true
+
+
+
+PUT /_snapshot/sample_data?verify=false
+{
+  "type": "fs",
+  "settings": {
+    "location": "/mnt/backups/sample_data"
+  }
+}
+
+
+
+
+PUT /_slm/policy/nightly
+{
+  "schedule": "0 0 2 * * ?", 
+  "name": "<nightly-{now/d}>", 
+  "repository": "sample_data", 
+  "config": { 
+    "indices": ["kibana_sample_data_*"], 
+    "ignore_unavailable": false,
+    "include_global_state": false
+  },
+  "retention": { 
+    "min_count": 7, 
+    "max_count": 30 
+  }
+}
+
+
+
+
+
+
+PUT /_snapshot/shakespeare?verify=false
+{
+  "type": "fs",
+  "settings": {
+    "location": "/mnt/backups/shakespeare",
+    "indices": ["shakespeare"]
+  }
+}
+
+GET /_snapshot/shakespeare
+
+GET /_snapshot/shakespeare/original
+
+
+PUT /_snapshot/shakespeare/original
+{
+  "indices": "shakespeare"
+}
+
+GET _snapshot/shakespeare/shake_snapshot
+
+GET _snapshot/shakespeare/*
+
+
+
+PUT _ilm/policy/alerts_policy
+{
+  "policy": {
+    "phases": {
+      "hot": {
+        "actions": {
+          "rollover": {
+            "max_primary_shard_size": "10gb"
+          },
+          "forcemerge": {
+            "max_num_segments": 1
+          },
+          "readonly": {}
+        }
+      },
+      "cold": {
+        "min_age": "30d",
+        "actions": {
+          "searchable_snapshot": {
+            "snapshot_repository": "sample_data"
+          }
+        }
+      },
+      "delete": {
+        "min_age": "180d",
+        "actions": {
+          "delete": {}
+        }
+      }
+    }
+  }
+}
+
+
+PUT _component_template/strings_as_keywords
+{
+  
+  "template": {
+    "mappings": {
+      "dynamic_templates":[
+          {
+            "strings_as_keywords":{
+              "match_mapping_type": "string",
+              "mapping":{
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          }
+        ]
+    }
+  }
+}
+
+
+PUT _component_template/shards
+{
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    }
+  }
+}
+
+
+
+
+
+PUT _index_template/alerts_template
+{
+  "index_patterns": ["alerts_stream"],
+  "data_stream":{},
+  "composed_of": ["strings_as_keywords", "shards"],
+  "template":{
+    "settings":{
+      "index.lifecycle.name": "alerts_policy"  
+    }
+    
+  }
+}
+
+
+
+
+PUT _data_stream/alerts_stream
+
+
+
+#####
+
+
+
+
+PUT _ingest/pipeline/migrate_accounts
+{
+  "processors": [
+    {
+      "remove": {
+        "field": ["account_number", "age", "gender"]
+      }
+    },
+    {
+      "set": {
+        "field": "tos_ack",
+        "if": "ctx.state == 'VA'", 
+        "value": false
+      }
+    },
+    {
+      "set": {
+        "field": "tos_ack",
+        "if": "ctx.state != 'VA'", 
+        "value": true
+      }
+    }
+    
+
+  ]
+}
+
+
+GET accounts/_search
+{
+  "track_total_hits": true
+}
+
+POST _reindex
+{
+  "source": {
+    "remote": {
+      "host": "http://10.0.1.102:9200",
+      "username": "elastic",
+      "password": "elastic_acg"
+    },
+    "index": "accounts"
+  },
+  "dest": {
+    "index": "accounts",
+    "pipeline": "migrate_accounts"
+  }
+  
+}
+
+DELETE accounts
+
+PUT accounts
+{
+  "mappings" : {
+      "properties" : {
+      
+        "address" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        },
+       
+        "balance" : {
+          "type" : "double"
+        },
+        "city" : {
+          "type" : "keyword"
+        },
+        "email" : {
+          "type" : "keyword"
+        },
+        "employer" : {
+          "type" : "keyword"
+        },
+        "firstname" : {
+          "type" : "keyword"
+        },
+
+        "lastname" : {
+          "type" : "keyword"
+        },
+        "state" : {
+          "type" : "keyword"
+        },
+        "tos_ack":{
+          "type": "boolean"
+        }
+      }
+    },
+    "settings":{
+      "index":{
+        "number_of_shards": 1,
+        "number_of_replicas": 0
+      }
+    }
+}
+
+
+
+GET shakespeare
+
+POST _reindex
+{
+  "source": {
+    "index": "shakespeare"
+  },
+  "dest": {
+    "index": "shakespeare_refactored"
+  }
+}
+
+GET shakespeare_refactored/_search
+{
+  "track_total_hits": true
+}
+
+DELETE shakespeare
+
+PUT shakespeare_refactored
+{
+    "mappings" : {
+      "properties" : {
+        "line_id" : {
+          "type" : "long"
+        },
+        "line_number" : {
+          "type" : "keyword"
+        },
+        "play_name" : {
+          "type" : "keyword"
+        },
+        "speaker" : {
+          "type" : "keyword"
+        },
+        "speech_number" : {
+          "type" : "long"
+         
+        },
+        "text_entry" : {
+          "type" : "text"
+        },
+        "type" : {
+          "type" : "keyword"
+        }
+      }
+    },
+    "settings": {
+      "analysis": {
+        "analyzer": {
+          "default": {
+            "tokenizer": "classic",
+            "filters": ["english_stop"]
+          }
+        },
+        "filter": {
+          "english_stop":{
+            "type": "stop",
+            "stopwords": "_english_",
+            "ignore_case": true
+          }
+        }
+      }, 
+      "index":{
+        "number_of_shards": 1,
+        "number_of_replicas": 0
+      }
+    }
+}
+
+
+POST _aliases
+{
+  "actions": [
+    {
+      "add": {
+        "index": "shakespeare_refactored",
+        "alias": "shakespeare"
+      }
+    }
+  ]
+}
+
+
+
+
+POST shakespeare/_update_by_query
+{
+  "query": {
+    "match_phrase": {
+      "play_name": "A Winners Tale"
+    }
+  },
+  "script": {
+    "source": "ctx._source.play_name= 'A Winter\\'s Tale' ",
+    "lang": "painless"
+  }
+}
+
+
+
+GET shakespeare/_search
+{
+  "query": {
+    "match_phrase": {
+      "play_name": "A Winter's Tale"
+    }
+  }
+}
+
+
+
+
+
+GET kibana_sample_data_ecommerce/_settings
+
+
+DELETE ecommerce_fixed
+PUT ecommerce_fixed
+{
+  "mappings" : {
+      "properties" : {
+        "category" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "currency" : {
+          "type" : "keyword"
+        },
+        "customer_birth_date" : {
+          "type" : "date"
+        },
+        "customer_first_name" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        },
+        "customer_full_name" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        },
+        "customer_gender" : {
+          "type" : "keyword"
+        },
+        "customer_id" : {
+          "type" : "keyword"
+        },
+        "customer_last_name" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        },
+        "customer_phone" : {
+          "type" : "keyword"
+        },
+        "day_of_week" : {
+          "type" : "keyword"
+        },
+        "day_of_week_i" : {
+          "type" : "integer"
+        },
+        "email" : {
+          "type" : "keyword"
+        },
+        "event" : {
+          "properties" : {
+            "dataset" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "geoip" : {
+          "properties" : {
+            "city_name" : {
+              "type" : "keyword"
+            },
+            "continent_name" : {
+              "type" : "keyword"
+            },
+            "country_iso_code" : {
+              "type" : "keyword"
+            },
+            "location" : {
+              "type" : "geo_point"
+            },
+            "region_name" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "manufacturer" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "order_date" : {
+          "type" : "date"
+        },
+        "order_id" : {
+          "type" : "keyword"
+        },
+        "products" : {
+          "type": "nested", 
+          "properties" : {
+            "_id" : {
+              "type" : "text",
+              "fields" : {
+                "keyword" : {
+                  "type" : "keyword",
+                  "ignore_above" : 256
+                }
+              }
+            },
+            "base_price" : {
+              "type" : "half_float"
+            },
+            "base_unit_price" : {
+              "type" : "half_float"
+            },
+            "category" : {
+              "type" : "text",
+              "fields" : {
+                "keyword" : {
+                  "type" : "keyword"
+                }
+              }
+            },
+            "created_on" : {
+              "type" : "date"
+            },
+            "discount_amount" : {
+              "type" : "half_float"
+            },
+            "discount_percentage" : {
+              "type" : "half_float"
+            },
+            "manufacturer" : {
+              "type" : "text",
+              "fields" : {
+                "keyword" : {
+                  "type" : "keyword"
+                }
+              }
+            },
+            "min_price" : {
+              "type" : "half_float"
+            },
+            "price" : {
+              "type" : "half_float"
+            },
+            "product_id" : {
+              "type" : "long"
+            },
+            "product_name" : {
+              "type" : "text",
+              "fields" : {
+                "keyword" : {
+                  "type" : "keyword"
+                }
+              },
+              "analyzer" : "english"
+            },
+            "quantity" : {
+              "type" : "integer"
+            },
+            "sku" : {
+              "type" : "keyword"
+            },
+            "tax_amount" : {
+              "type" : "half_float"
+            },
+            "taxful_price" : {
+              "type" : "half_float"
+            },
+            "taxless_price" : {
+              "type" : "half_float"
+            },
+            "unit_discount_amount" : {
+              "type" : "half_float"
+            }
+          }
+        },
+        "sku" : {
+          "type" : "keyword"
+        },
+        "taxful_total_price" : {
+          "type" : "half_float"
+        },
+        "taxless_total_price" : {
+          "type" : "half_float"
+        },
+        "total_quantity" : {
+          "type" : "integer"
+        },
+        "total_unique_products" : {
+          "type" : "integer"
+        },
+        "type" : {
+          "type" : "keyword"
+        },
+        "user" : {
+          "type" : "keyword"
+        }
+      }
+    },
+    "settings": {
+      "index":{
+        "number_of_shards": 1,
+        "number_of_replicas": 0
+      }
+    }
+}
+
+
+
+POST _reindex
+{
+  "source":{
+    "index": "kibana_sample_data_ecommerce"
+  },
+  "dest":{
+    "index": "ecommerce_fixed"
+  }
+}
+
+
+GET _cat/indices/?v
+
+GET ecommerce_fixed/_search
+{
+  "track_total_hits": true
+}
+
+
+DELETE kibana_sample_data_ecommerce
+
+
+POST _aliases
+{
+  "actions": [
+    {
+      "add": {
+        "index": "ecommerce_fixed",
+        "alias": "kibana_sample_data_ecommerce"
+      }
+    },
+    {
+      "add": {
+        "index": "ecommerce_fixed",
+        "alias": "ecommerce"
+      }
+    }
+  ]
+}
+
+
+
+
+
+
+GET ecommerce/_search
+
+
+GET ecommerce/_search
+{
+  "from": "{{from}}{{^from}}0{{/from}}",
+  "size": "{{size}}{{^size}}25{{/size}}",
+  "query": {
+    "nested": {
+      "path": "products",
+      "query": {
+        "match": {
+          "products.product_name": "{{search_term}}"
+        }
+      }
+    }
+  },
+  "highlight": {
+    "fields": {
+      "products.product_name":{
+        "pre_tags": ["<mark>"],
+        "post_tags": ["</mark>"]
+      }
+    }
+  },
+  "sort": [
+    {
+      "geoip.continent_name": {
+        "order": "desc"
+      }
+    },
+    {
+      "geoip.city_name":{
+        "order": "desc"
+      }
+    },
+    "_score"
+  ]
+}
+
+
+PUT _scripts/products
+{
+  "script":{
+    "lang": "mustache",
+    "source": {
+        "from": "{{from}}{{^from}}0{{/from}}",
+        "size": "{{size}}{{^size}}25{{/size}}",
+        "query": {
+          "nested": {
+            "path": "products",
+            "query": {
+              "match": {
+                "products.product_name": "{{search_term}}"
+              }
+            }
+          }
+  },
+        "highlight": {
+          "fields": {
+            "products.product_name":{
+              "pre_tags": ["<mark>"],
+              "post_tags": ["</mark>"]
+            }
+          }
+  },
+        "sort": [
+          {
+            "geoip.continent_name": {
+              "order": "desc"
+            }
+          },
+          {
+            "geoip.city_name":{
+              "order": "desc"
+            }
+          },
+          "_score"
+  ]
+    }
+  }
+}
+
+
+
+
+
+POST _render/template
+{
+  "id": "products",
+  "params": {
+    "from": 0,
+    "size": 25,
+    "search_term": "belt"
+  }
+}
+
+
+
+
+GET ecommerce/_search/template
+{
+  "id": "products",
+  "params": {
+    "from": 0,
+    "size": 25,
+    "search_term": "belt"
+  }
+}
+
+
+
+
+
+
+
+GET filebeat-7.13.4/_search
+
+GET filebeat-7.13.4/_mapping
+
+PUT _cluster/settings
+{
+  "persistent": {
+    "cluster": {
+      "remote":{
+        "c2":{
+          "seeds": ["10.0.1.102:9300"]
+        }
+      }
+    }
+  }
+}
+
+
+
+GET  filebeat-7.13.4,c2:filebeat-7.13.4/_search
+{
+  "from": 0,
+  "size": 100,
+  "query":{
+    "bool": {
+      "must": [
+        {
+          "term": {
+            "event.module": {
+              "value": "system"
+            }
+          }
+        },
+        {
+          "term": {
+            "log.file.path": {
+              "value": "/var/log/secure"
+            }
+          }
+        },
+        {
+          "term": {
+            "process.name": {
+              "value": "sshd"
+            }
+          }
+        }
+      ],
+      "should": [
+        {
+          "match_phrase": {
+            "message": "invalid user"
+          }
+        },
+        {
+          "match_phrase": {
+            "message": "authentication failure"
+          }
+        },
+        {
+          "match_phrase": {
+            "message": "failed password"
+          }
+        }
+      ],
+      "minimum_should_match": 1,
+      "must_not": [
+        {
+          "term":{
+            "message":{
+              "value": "cloud_user"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+
+
+POST filebeat-7.13.4/_async_search?wait_for_completion_timeout=0
+{
+  "query": {
+    "match": {
+      "message": "cloud_user"
+    }
+  }
+}
+
+POST /_license/start_trial?acknowledge=true
+
+
+GET _async_search/FjNDbk9mRzNkUk95R24xandCMlprSUEcaEVXZjlDekdRQnVYY29lQWowTWU2dzo1NzMwOQ==
+
+
+
+GET ecommerce/_search
+
+
+GET _cluster/stats
+
+
+PUT /_security/privilege
+{
+  "myapp": {
+    "read": {
+      "actions": [ 
+        "data:read/*" , 
+        "action:login" ],
+        "metadata": { 
+          "description": "Read access to myapp"
+        }
+      }
+    }
+}
+
+POST /_security/role/us_customers_read
+{
+ 
+  "indices": [
+    {
+      "names": ["ecommerce"],
+      "privileges": ["read"],
+      "field_security":{
+        "grant": ["customer_full_name", "email", "customer_phone", "customer_id" ]
+      },
+      "query": {
+        "term": {
+          "geoip.country_iso_code":{
+            "value": "US"}
+        }
+      }
+    }
+  ]
+}
+
+
+
+POST _security/user/mbender
+{
+   "password" : "kUwn7euAj45t",
+  "roles" : [ "us_customers_read", "kibana_user" ],
+  "full_name" : "Michael Bender",
+  "email" : "mbender@company.com"
+
+}
+
+
+
+GET shakespeare
+
+
+
+POST _snapshot/shakespeare/original
+{
+  "ignore_unavailable": true,
+  "indices": "shakespeare",
+   "rename_pattern": "(.+)",
+   "rename_replacement": "$1_original"
+}
+
+
+
+GET _cat/indices/sh*?v
+
+
+GET _snapshot/shakespeare/original
+
+POST _snapshot/shakespeare/original/_mount
+{
+  "index": "shakespeare",
+  "renamed_index": "shakespeare_original"
+  
+}
+
+
+GET _snapshot/_status
+
+
+
+ 
+### Aggregations
+
+
+
+GET flights/_search
+{
+  "size": 0,
+  "aggs": {
+    "unique_dest_locs": {
+      "cardinality": {
+        "field": "DestLocation"
+      }
+    }
+  }
+}
+
+ 
+GET flights/_search
+{
+  "size": 0,
+  "aggs": {
+    "dest_weather": {
+      "terms": {
+        "field": "DestWeather",
+        "size": 3
+      }
+    }
+  }
+}
+ 
+ 
+ 
+ GET _cat/indices?v
+ 
+ GET crop_yields/_search
+ 
+ GET crop_yields/_search
+ {
+   "size": 0,
+   "query":{
+     "match": {
+       "year": 1980
+     }
+   },
+   "aggs": {
+     "countries": {
+       "terms": {
+         "field": "country",
+         "size": 5
+       },
+       "aggs": {
+         "avg_yield": {
+           "avg": {
+             "field": "rye"
+           }
+         }
+         
+       }
+     }
+   }
+ }
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+####################################################################
+##############################cluster c2##############################
+
+
+
+
+
+GET _cat/nodes?v
+
+GET _cat/indices?h=status,health,index&v
+
+
+
+GET _cat/indices/shakespeare?v&h=pri,rep
+
+
+
+GET _cat/allocation/explain
+
+
+GET _cluster/allocation/explain
+
+
+GET _refresh
+
+
+PUT accounts/_settings
+{
+  "index":{
+    "number_of_replicas": 1,
+    "routing.allocation.require._name": null
+  }
+}
+
+
+
+
+
+
+
+GET accounts/_mapping
+
+
+
+DELETE accounts
+
+
+
+
+GET filebeat-7.13.4/_search
+
+
+
+GET accounts/_search
+
+
+
+
+
+PUT _cluster/settings
+{
+  "persistent": {
+    "cluster": {
+      "remote":{
+        "c1":{
+          "seeds": "10.0.1.101:9300"
+        }
+      }
+    }
+  }
+}
+
+
+GET _cat/indices?v&h=index
+
+POST /_license/start_trial?acknowledge=true
+
+
+PUT accounts/_ccr/follow
+{
+  "remote_cluster": "c1",
+  "leader_index": "accounts"
+}
+
+
+
+
+PUT _ccr/auto_follow/alerts
+{
+  "remote_cluster": "c1",
+  "leader_index_patterns": "*alerts_stream*",
+  "follow_index_pattern": "alerts_stream"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+####################################################################
+################## # Aggregations Examples #########################
+
+
+
+
+
+GET _cat/indices/ba*?v
+
+GET bank/_search
+{
+  "size": 0,
+  "aggs":{
+    "uniq_employers":{
+      "cardinality": {
+        "field": "employer.keyword"
+      }
+    }
+  }
+}
+
+
+GET bank/_search
+
+GET bank/_search
+{
+  "size": 0,
+  "aggs":{
+    "state":{
+      "terms": {
+        "field": "state.keyword"
+      }
+      
+    }
+  }
+}
+
+GET bank/_search
+
+
+
+GET bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "state": {
+      "terms": {
+        "field": "state.keyword"
+      },
+      "aggs": {
+        "gender": {
+          "terms": {
+            "field": "gender.keyword"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+
+GET bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "state": {
+      "terms": {
+        "field": "state.keyword",
+        "order": {
+          "avg_bal": "desc"
+        }
+      },
+      "aggs": {
+        "avg_bal": {
+          "avg": {
+            "field": "balance"
+          }
+        }
+      }
+    },
+    "max_avg_bucket":{
+      "max_bucket": {
+        "buckets_path": "state>avg_bal"
+      }
+    }
+  }
+}
+
+
+GET bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "state": {
+      "terms": {
+        "field": "state.keyword",
+        "size": 50
+      },
+      "aggs": {
+        "balance": {
+          "avg": {
+            "field": "balance"
+          }
+        }
+      }
+    },
+    "max_average_balance": {
+      "max_bucket": {
+        "buckets_path": "state>balance"
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+GET bank/_search
+{
+  "size": 0,
+  "query": {
+    "range": {
+      "age": {
+        "gte": 30
+      }
+    }
+  },
+  "aggs": {
+    "state": {
+      "terms": {
+        "field": "state.keyword",
+        "size": 5,
+        "order": {
+          "total_bal": "desc"
+        }
+      },
+      "aggs":{
+        "total_bal":{
+          "sum": {
+            "field": "balance"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+
+
+GET bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "state": {
+      "terms": {
+        "field": "state.keyword",
+        "size": 5,
+        "order": {
+          "balance": "desc"
+        }
+      },
+      "aggs": {
+        "balance": {
+          "sum": {
+            "field": "balance"
+          }
+        }
+      }
+    }
+  },
+  "query": {
+    "bool": {
+      "filter": {
+        "range": {
+          "age": {
+            "gte": 30
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+###############################################################
+################# Indices Creation ###############################
+
+
+
+
+PUT logs-2020-01-05
+PUT logs-2020-01-06
+PUT logs-2020-01-07
+PUT logs-2020-01-08
+PUT logs-2020-01-09
+
+
+DELETE logs-2020-01-05
+DELETE logs-2020-01-06
+DELETE logs-2020-01-07
+DELETE logs-2020-01-08
+DELETE logs-2020-01-09
+
+
+PUT logs-2020-01-05/
+{
+  "settings": {
+   "number_of_shards": 2,
+  "number_of_replicas": 1 
+  } 
+  
+
+}
+
+
+PUT logs-2020-01-06/
+{
+  "settings": {
+   "number_of_shards": 2,
+  "number_of_replicas": 1 
+  } 
+  
+
+}
+
+PUT logs-2020-01-07/
+{
+  "settings": {
+   "number_of_shards": 2,
+  "number_of_replicas": 1 
+  } 
+  
+
+}
+
+PUT logs-2020-01-08/
+{
+  "settings": {
+   "number_of_shards": 2,
+  "number_of_replicas": 1 
+  } 
+  
+
+}
+
+PUT logs-2020-01-09/
+{
+  "settings": {
+   "number_of_shards": 2,
+  "number_of_replicas": 1 
+  } 
+  
+
+}
+
+
+GET logs-2020-01-08
+
+POST _aliases
+{
+  "actions": [
+    {
+      "add": {
+        "index": "logs-2020-01-0*",
+        "alias": "logs"
+      }
+    },
+    {
+      "add": {
+        "index": "logs-2020-01-0*",
+        "alias": "this_week"
+      }
+    }
+  ]
+}
+
+
+
+PUT logs-2020-01-0*/_settings
+{
+  "index.routing.allocation.require.temp": "warm"
+}
+
+DELETE logs-2020-01-1*
+
+PUT logs-2020-01-10/
+{
+  "aliases": {
+    "logs": {},
+    "this_week":{},
+    "yesterday":{}
+  }, 
+  "settings": {
+   "number_of_shards": 2,
+  "number_of_replicas": 1 
+  } 
+  
+
+}
+
+
+
+PUT logs-2020-01-11/
+{
+    "aliases": {
+    "logs": {},
+    "this_week":{},
+    "today":{}
+  }, 
+  "settings": {
+   "number_of_shards": 2,
+  "number_of_replicas": 1 
+  } 
+  
+
+}
+
+
+
+PUT logs-2020-01-1*/_settings
+{
+  "index.routing.allocation.require.temp": "hot"
+}
+
+
+
+
+GET logs-2020-01-10
+
+
+
+
+
+
+
+
+
+####################################################################
+##################### index templates and dynamic mapping ##########
+
+
+
+PUT _index_template/customers
+{
+  
+}
+
+PUT _index_template/customers 
+{
+
+  "index_patterns": ["customers-*"],
+  "template": {
+     "mappings":{
+    "dynamic_templates":[
+      {
+        "long_to_integer":{
+          "match_mapping_type": "long",
+          "mapping":{
+            "type": "integer"
+          }
+        }
+      }
+      ],
+    "properties":{
+      "year_to_date":{
+        "type": "double"
+      }
+    }
+  },
+    "aliases":{
+    "customers":{}
+  },
+    "settings":{
+      "number_of_shards": 4,
+      "number_of_replicas": 3
+    }
+  }
+ 
+  
+}
+
+
+PUT _index_template/partners
+{
+  "index_patterns": ["partners-*"],
+  "template": {
+    "aliases": {
+      "partners": {}
+    },
+    "mappings": {
+      "dynamic_templates":[
+        {
+          "string_to_keyword":{
+            "match_mapping_type":"string",
+            "mapping":{
+              "type": "keyword"
+            }
+          }
+        }
+        ],
+      "properties": {
+        "address":{
+          "type": "text"
+        }
+      }
+    },
+    "settings": {
+      "number_of_shards": 4,
+      "number_of_replicas": 3
+    }
+  }
+}
+ 
+ 
+PUT _index_template/leads
+{
+  "index_patterns": ["leads-*"],
+  "template": {
+    "aliases": {
+      "leads": {}
+    },
+    "mappings": {
+      "dynamic_templates":[
+        {
+          "string_to_keyword":{
+            "match_mapping_type": "string",
+            "match": "lead_*",
+            "unmatch": "*_text",
+            "mapping":{
+              "type": "keyword"
+            }
+          }
+        }
+        ],
+      "properties": {
+        "address":{
+          "type": "text"
+        },
+        "estimate":{
+          "type": "double"
+        }
+      }
+    }
+  }
+}
+ 
+ 
+ 
+############################################
+################ CRUD operations
+
+
+
+
+
+GET _cat/indices?v
+
+
+
+GET bank/_search
+
+Firstname: John
+Lastname: Doe
+Age: 23
+Gender: Male
+Address: 125 Bear Creek Pkwy
+Employer: Linux Academy
+Email: john@linuxacademy.com
+City: Keller
+State: TX
+
+POST bank/_doc
+{
+ "account_number": 1000,
+  "balance" : 65536,
+  "firstname" : "John",
+  "lastname" : "Doe",
+  "age" : 23,
+  "gender" : "M",
+  "address" : "125 Bear Creek Pkwy",
+  "employer" : "Linux Academy",
+  "email" : "john@linuxacademy.com",
+  "city" : "Keller",
+  "state" : "TX"
+}
+
+
+GET bank/_search
+{
+  "query":{
+    "match":{
+      "account_number": 100
+    }
+  }
+}
+
+
+POST bank/_update_by_query
+{
+  "query":{
+    "match":{
+      "account_number": 100
+    }
+  },
+  "script":{
+    "lang": "painless",
+    "source":""" 
+      ctx._source.address= '1600 Pennsylvania Ave NW';
+      ctx._source.city = 'Washington';
+      ctx._source.state = 'DC';
+    
+    """
+  }
+}
+
+
+POST bank/_update/100
+{
+  "doc":
+    {
+      "address": "1600 Pennsylvania Ave NN",
+      "city": "wash",
+      "state": "DD"
+    }
+    
+    
+}
+
+
+
+
+
+
+POST bank/_delete_by_query
+{
+  "query":{
+    "terms": {
+      "account_number": [
+        1,
+        10
+      ]
+    }
+  }
+}
+
+GET bank/_doc/2
+
+GET bank/_search
+{
+  "query":{
+    "terms": {
+      "account_number": [
+        1,
+        10
+      ]
+    }
+  }
+}
+
+
+
+
+
+#########################################################
+########## Reindex and Ingest ##########################
+
+
+
+
+GET shakespeare/_search
+
+
+
+PUT _ingest/pipeline/migrate_shakespeare
+{
+  "processors": [
+    {
+      "split": {
+        "field": "text_entry",
+        "separator": "\\s+",
+        "target_field": "word_array"
+      }
+    },
+    {
+      "script":{
+        "source": "ctx.word_count=ctx.word_array.length"
+      }
+    },
+    {
+      "remove": {
+        "field": "play_name"
+      }
+    }
+  ]
+}
+
+GET shakespeare/_search
+{
+  "query": {
+      "term": {
+        "play_name": {
+          "value": "Romeo and Juliet"
+        }
+      }
+    }
+}
+
+GET shakespeare/_mapping
+
+DELETE romeo_and_juliet
+
+PUT romeo_and_juliet
+{
+  "mappings" : {
+      "properties" : {
+        "line_id" : {
+          "type" : "integer"
+        },
+        "line_number" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        },
+        "play_name" : {
+          "type" : "keyword"
+        },
+        "speaker" : {
+          "type" : "keyword"
+        },
+        "speech_number" : {
+          "type" : "integer"
+        },
+        "text_entry" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        },
+        "type" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        }
+      }
+    },
+    "settings": {
+      "number_of_shards": 4,
+      "number_of_replicas": 3
+    }
+}
+
+
+
+
+POST _reindex
+{
+  "source": {
+    "index": "shakespeare",
+    "query": {
+      "term": {
+        "play_name": {
+          "value": "Romeo and Juliet"
+        }
+      }
+    }
+  },
+  "dest": {
+    "index": "romeo_and_juliet",
+    "pipeline": "migrate_shakespeare"
+  }
+}
+
+
+GET romeo_and_juliet/_search
+
+GET _cat/indices?v
+
+
+
+
+
+GET shakespeare/_mapping
+
+
+
+PUT shakespeare_new
+{
+  "mappings" : {
+      "properties" : {
+        "line_id" : {
+          "type" : "integer"
+        },
+        "line_number" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        },
+        "play_name" : {
+          "type" : "keyword"
+        },
+        "speaker" : {
+          "type" : "keyword"
+        },
+        "speech_number" : {
+          "type" : "integer"
+        },
+        "text_entry" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            },
+            "case_insensitive":{
+              "type": "text",
+              "analyzer": "standard_custom"
+            }
+          }
+        },
+        "type" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        }
+      }
+    },
+    "settings": {
+      "analysis": {
+        "analyzer": {
+          "standard_custom":{
+            "type": "custom",
+            "tokenizer": "standard",
+            "filters":[ "english_insensitive"]
+          }
+        },
+        "filter": {
+          "english_insensitive":{
+            "type": "stop",
+            "stopwords": "_english_",
+            "ignore_case": false
+          }
+        }
+      }
+    }
+}
+
+
+
+
+POST _reindex
+{
+  "source": {
+    "index": "shakespeare"
+  },
+  "dest": {
+    "index": "shakespeare_new"
+  }
+}
+
+
+
+
+
+
+
+GET shakespeare/_mapping
+
+GET shakespeare/_search
+{
+  "track_total_hits": true,
+  "query":{
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "text_entry": "london"
+          }
+        },
+        {
+          "term": {
+            "type.keyword": {
+              "value": "scene"
+            }
+          }
+        }
+      ], 
+      "should": [
+        {
+          "term": {
+            "play_name": {
+              "value": "Henry VI Part 1"
+            }
+          }
+        },
+        {
+          "term": {
+            "play_name": {
+              "value": "Henry VI Part 2"
+            }
+          }
+        },
+        {
+          "term": {
+            "play_name": {
+              "value": "Henry VI Part 3"
+            }
+          }
+        }
+      ],
+      "minimum_should_match": 1
+    }
+  },
+  "sort": [
+    {
+      "play_name": {
+        "order": "asc"
+      }
+    },
+    {
+      "line_id": { "order": "asc"}
+    }
+  ]
+}
+
+
+
+GET shakespeare/_mapping
+
+
+GET shakespeare/_search
+{
+  "from": 0,
+  "size": 5,
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "text_entry": "death"
+          }
+        }
+      ],
+      "filter": {
+        "term": {
+          "play_name": "Hamlet"
+        }
+      }
+    }
+  },
+  "sort": [
+    "_score",
+    {
+      "line_id": {
+        "order": "asc"
+      }
+    }
+  ],
+  "highlight": {
+    "pre_tags": "<strong>",
+    "post_tags": "</strong>", 
+    "fields": {
+      "play_name": {},
+      "text_entry": {}
+    }
+  }
+  
+}
+
+
+
+
+##################################################################
+
+
+
+GET shakespeare/_mapping
+
+
+GET shakespeare/_search
+{
+  "from": "{{from}}{{^from}}0{{/from}}",
+  "size": "{{size}}{{^size}}0{{/size}}",
+  "query": {
+    "match": {
+      "text_entry": "{{text}}"
+    }
+  }
+}
+
+
+GET _cat/nodes?v
+
+
+
+GET _cat/indices?v&h=index
+
+
+PUT _scripts/shake
+{
+  "script": {
+    "lang": "mustache", 
+    "source": {
+      "from": "{{from}}{{^from}}0{{/from}}",
+      "size": "{{size}}{{^size}}25{{/size}}",
+      "query": {
+        "match": {
+          "text_entry": "{{text}}"
+        }
+      }
+    }
+  }
+}
+
+
+
+GET shakespeare/_search/template
+{
+  "id": "shake",
+  "params": {
+    "text": "Hamlet"
+  }
+}
+
+
+#############------------------------------------------#############
+
+
+
+POST hamlet/_bulk
+{"index":{"_index":"hamlet","_id":0}}
+{"line_number":"1","speaker":"BERNARDO","text_entry":"Whos there?"}
+{"index":{"_index":"hamlet","_id":1}}
+{"line_number":"2","speaker":"FRANCISCO","text_entry":"Nay, answer me: stand, and unfold yourself."}
+{"index":{"_index":"hamlet","_id":2}}
+{"line_number":"3","speaker":"BERNARDO","text_entry":"Long live the king!"}
+{"index":{"_index":"hamlet","_id":3}}
+{"line_number":"4","speaker":"FRANCISCO","text_entry":"Bernardo?"}
+{"index":{"_index":"hamlet","_id":4}}
+{"line_number":"5","speaker":"BERNARDO","text_entry":"He."}
+{"index":{"_index":"hamlet","_id":5}}
+{"line_number":"6","speaker":"FRANCISCO","text_entry":"You come most carefully upon your hour."}
+{"index":{"_index":"hamlet","_id":6}}
+{"line_number":"7","speaker":"BERNARDO","text_entry":"Tis now struck twelve; get thee to bed, Francisco."}
+{"index":{"_index":"hamlet","_id":7}}
+{"line_number":"8","speaker":"FRANCISCO","text_entry":"For this relief much thanks: tis bitter cold,"}
+{"index":{"_index":"hamlet","_id":8}}
+{"line_number":"9","speaker":"FRANCISCO","text_entry":"And I am sick at heart."}
+{"index":{"_index":"hamlet","_id":9}}
+{"line_number":"10","speaker":"BERNARDO","text_entry":"Have you had quiet guard?"}
+
+
+
+
+
+GET _cat/indices/hamlet*?v
+
+GET _cat/nodes?v
+
+GET _cat/shards?v
+
+GET _cat/allocation/explain
+
+GET _cat/shards/hamlet?v
+
+GET _cat/shards/hamlet-1?v
+
+GET _cat/shards/hamlet-2?v
+
+
+DELETE hamlet-1
+
+PUT hamlet-1/_settings
+{
+  "index.routing.allocation.require._name": "instance-0000000000"
+}
+
+
+PUT hamlet-1/_settings
+{
+  "index.routing.allocation.include._name": "instance-0000000000",
+  "index.routing.allocation.exclude._name": "_all"
+}
+
+
+
+
+
+GET _cluster/allocation/explain
+{
+  "index": "hamlet-1",
+  "shard": 0,
+  "primary": false
+}
+
+
+
+
+
+
+DELETE hamlet-1
+
+PUT hamlet-1
+{
+  "settings": {
+    "number_of_shards": 2,
+    "number_of_replicas": 1
+  }
+}
+
+DELETE hamlet-2
+
+PUT hamlet-2
+{
+  "settings": {
+    "number_of_shards": 2,
+    "number_of_replicas": 1
+  }
+}
+# Create the index `hamlet-1` with two primary shards and one 
+#    replica
+# Add some documents to `hamlet-1` by running the command below 
+PUT hamlet-1/_bulk
+{"index":{"_index":"hamlet-1","_id":0}}  
+{"line_number":"1","speaker":"BERNARDO","text_entry":"Whos there?"}
+{"index":{"_index":"hamlet-1","_id":1}} 
+{"line_number":"2","speaker":"FRANCISCO","text_entry":"Nay, answer me: stand, and unfold yourself."}
+{"index":{"_index":"hamlet-1","_id":2}}
+{"line_number":"3","speaker":"BERNARDO","text_entry":"Long live the king!"}
+{"index":{"_index":"hamlet-1","_id":3}}
+{"line_number":"4","speaker":"FRANCISCO","text_entry":"Bernardo?"}
+{"index":{"_index":"hamlet-1","_id":4}}
+{"line_number":"5","speaker":"BERNARDO","text_entry":"He."}
+# Create the index `hamlet-2` with two primary shard and one replica
+# Add some documents to `hamlet-2` by running the command below
+PUT hamlet-2/_bulk
+{"index":{"_index":"hamlet-2","_id":5}}
+{"line_number":"6","speaker":"FRANCISCO","text_entry":"You come most carefully upon your hour."}
+{"index":{"_index":"hamlet-2","_id":6}}
+{"line_number":"7","speaker":"BERNARDO","text_entry":"Tis now struck twelve; get thee to bed, Francisco."}
+{"index":{"_index":"hamlet-2","_id":7}}
+{"line_number":"8","speaker":"FRANCISCO","text_entry":"For this relief much thanks: tis bitter cold,"}
+{"index":{"_index":"hamlet-2","_id":8}}
+{"line_number":"9","speaker":"FRANCISCO","text_entry":"And I am sick at heart."}
+{"index":{"_index":"hamlet-2","_id":9}}
+{"line_number":"10","speaker":"BERNARDO","text_entry":"Have you had quiet guard?"}
+
+
+
+
+
+GET _cat/shards/hamlet-2?v
+
+GET _cat/nodes?h=name&v
+
+
+PUT hamlet-2/_settings
+{
+  "index.routing.allocation.exclude._name": "instance-0000000000"
+}
+
+
+
+
+DELETE hamlet
+
+GET hamlet/_mapping
+
+PUT hamlet
+{
+   "mappings": {
+      "properties": {
+        "line_number": {
+          "type": "keyword"
+        
+        },
+        "speaker": {
+          "type": "keyword"
+          
+        },
+        "text_entry": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        }
+      }
+    }
+}
+
+
+
+
+GET hamlet/_search
+
+PUT hamlet/_mapping
+{
+  "properties":{
+    "line_number":{
+      "type": "keyword",
+       "doc_values": false
+    }
+  }
+}
+
+
+
+
+DELETE hamlet-2
+
+
+PUT hamlet-2
+{
+  "settings": {
+    "index":{
+          "number_of_shards": 1,
+         "number_of_replicas": 0
+    }
+}
+}
+
+
+DELETE hamlet-2
+
+PUT hamlet-2
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0, 
+    "analysis": {
+      "analyzer": {
+        "shy_hamlet_analyzer":{
+          "type": "custom",
+          "tokenizer": "whitespace",
+          "char_filter":["rep_ham"],
+          "filters": ["leng"]
+        }
+      },
+      "char_filter": {
+        "rep_ham":{
+          "type": "mapping",
+          "mappings": [
+            "relief => [CENSORED]"
+            ]
+        }
+      },
+      "filter": {
+        "leng":{
+          "type": "length",
+          "min": 5
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "text_entry": {
+          "type": "text",
+          "analyzer": "shy_hamlet_analyzer", 
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        } 
+    }
+  }
+}
+
+
+
+
+
+
+POST hamlet-2/_bulk
+{"index":{"_index":"hamlet-2","_id":5}}
+{"line_number":"6","speaker":"FRANCISCO","text_entry":"You come most carefully upon your hour."}
+{"index":{"_index":"hamlet-2","_id":6}}
+{"line_number":"7","speaker":"BERNARDO","text_entry":"Tis now struck twelve; get thee to bed, Francisco."}
+{"index":{"_index":"hamlet-2","_id":7}}
+{"line_number":"8","speaker":"FRANCISCO","text_entry":"For this relief much thanks: tis bitter cold,"}
+{"index":{"_index":"hamlet-2","_id":8}}
+{"line_number":"9","speaker":"FRANCISCO","text_entry":"And I am sick at heart."}
+{"index":{"_index":"hamlet-2","_id":9}}
+{"line_number":"10","speaker":"BERNARDO","text_entry":"Have you had quiet guard?"}
+
+
+
+GET hamlet-2/_mapping
+
+
+
+
+
+
+GET hamlet-2/_search
+{
+  "query": {
+    "match": {
+      "text_entry": "[CENSORED]"
+    }
+  }
+}
+
+
+GET hamlet-2/_doc/7
+
+
+
+
+
+
+PUT hamlet-raw
+{
+ "settings": {
+   "number_of_replicas": 3,
+   "number_of_shards": 1
+ } 
+}
+
+
+
+POST hamlet-raw/_doc/1
+{
+  "line": "To be, or not to be: that is the question",
+  "line_number": "3.1.64"
+}
+
+
+
+POST hamlet-raw/_doc
+{
+  "text_entry": "Whether tis nobler in the mind to suffer",
+  "line_number": "3.1.66"
+}
+
+
+
+POST hamlet-raw/_update_by_query
+{
+  "query": {
+    "match": {
+      "line_number":  "3.1.66"
+    }
+  },
+  "script": {
+    "source": "ctx._source.line_number='3.1.65'",
+    "lang": "painless"
+  }
+}
+
+
+GET hamlet-raw/_search
+
+POST hamlet-raw/_update_by_query
+{
+  "query": {
+    "match_all": {}
+  },
+  "script": {
+    "source": "ctx._source.speaker='Hamlet'",
+    "lang": "painless"
+  }
+  
+  
+}
+
+
+
+POST hamlet-raw/_update/1
+{
+  "script": {
+    "source": "ctx._source.text_entry=ctx._source.line;ctx._source.remove('line')",
+    "lang": "painless"
+  }
+}
+
+
+
+DELETE hamlet
+
+GET hamlet/_search
+
+PUT hamlet/_bulk
+{"index":{"_index":"hamlet","_id":0}}
+{"line_number":"1.1.1","speaker":"BERNARDO","text_entry":"Whos there?"}
+{"index":{"_index":"hamlet","_id":1}}
+{"line_number":"1.1.2","speaker":"FRANCISCO","text_entry":"Nay, answer me: stand, and unfold yourself."}
+{"index":{"_index":"hamlet","_id":2}}
+{"line_number":"1.1.3","speaker":"BERNARDO","text_entry":"Long live the king!"}
+{"index":{"_index":"hamlet","_id":3}}
+{"line_number":"1.2.1","speaker":"KING CLAUDIUS","text_entry":"Though yet of Hamlet our dear brothers death"}
+{"index":{"_index":"hamlet","_id":4}}
+{"line_number":"1.2.2","speaker":"KING CLAUDIUS","text_entry":"The memory be green, and that it us befitted"}
+{"index":{"_index":"hamlet","_id":5}}
+{"line_number":"1.3.1","speaker":"LAERTES","text_entry":"My necessaries are embarkd: farewell:"}
+{"index":{"_index":"hamlet","_id":6}}
+{"line_number":"1.3.4","speaker":"LAERTES","text_entry":"But let me hear from you."}
+{"index":{"_index":"hamlet","_id":7}}
+{"line_number":"1.3.5","speaker":"OPHELIA","text_entry":"Do you doubt that?"}
+{"index":{"_index":"hamlet","_id":8}}
+{"line_number":"1.4.1","speaker":"HAMLET","text_entry":"The air bites shrewdly; it is very cold."}
+{"index":{"_index":"hamlet","_id":9}}
+{"line_number":"1.4.2","speaker":"HORATIO","text_entry":"It is a nipping and an eager air."}
+{"index":{"_index":"hamlet","_id":10}}
+{"line_number":"1.4.3","speaker":"HAMLET","text_entry":"What hour now?"}
+{"index":{"_index":"hamlet","_id":11}}
+{"line_number":"1.5.2","speaker":"Ghost","text_entry":"Mark me."}
+{"index":{"_index":"hamlet","_id":12}}
+{"line_number":"1.5.3","speaker":"HAMLET","text_entry":"I will."}
+
+
+
+
+PUT _scripts/set_is_hamlet
+{
+  "script":{
+    "lang": "painless",
+    "source": """
+      if(ctx._source.speaker == 'HAMLET')
+      {
+        ctx._source.is_hamlet = true;
+      }else{ctx._source.is_hamlet = false;}
+    
+    """
+  }
+}
+
+
+
+
+POST hamlet/_update_by_query
+{
+  "query": {
+    "match_all": {}
+  },
+  "script": {
+    "id": "set_is_hamlet"
+  }
+}
+
+
+GET hamlet/_search
+
+
+POST hamlet/_delete_by_query
+
+GET hamlet/_search
+
+POST hamlet/_delete_by_query
+{
+  "query":{
+    "terms": {
+      "speaker.keyword": [
+       "KING CLAUDIUS",
+       "LAERTES"
+      ]
+    }
+  }
+}
+
+
+GET hamlet/_mapping
+DELETE hamlet-1
+
+
+PUT _index_template/hamlet_template
+{
+  "index_patterns": ["hamlet*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "mappings": {
+      "properties": {
+         "line_number": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "speaker": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "text_entry": {
+          "type": "text",
+          "analyzer": "english", 
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+PUT hamlet_test
+
+GET hamlet_test
+DELETE hamlet-1
+DELETE hamlet-2
+
+
+PUT hamlet-1/_bulk
+{"index":{"_index":"hamlet-1","_id":0}}
+{"line_number":"1.1.1","speaker":"BERNARDO","text_entry":"Whos there?"}
+{"index":{"_index":"hamlet-1","_id":1}}
+{"line_number":"1.1.2","speaker":"FRANCISCO","text_entry":"Nay, answer me: stand, and unfold yourself."}
+{"index":{"_index":"hamlet-1","_id":2}}
+{"line_number":"1.1.3","speaker":"BERNARDO","text_entry":"Long live the king!"}
+{"index":{"_index":"hamlet-1","_id":3}}
+{"line_number":"1.2.1","speaker":"KING CLAUDIUS","text_entry":"Though yet of Hamlet our dear brothers death"}
+
+
+
+GET hamlet-1/_search
+
+
+
+GET _cat/nodes?v
+
+
+
+PUT hamlet-1/_bulk
+{"index":{"_index":"hamlet-1","_id":0}}
+{"line_number":"1.1.1","speaker":"BERNARDO","text_entry":"Whos there?"}
+{"index":{"_index":"hamlet-1","_id":1}}
+{"line_number":"1.1.2","speaker":"FRANCISCO","text_entry":"Nay, answer me: stand, and unfold yourself."}
+{"index":{"_index":"hamlet-1","_id":2}}
+{"line_number":"1.1.3","speaker":"BERNARDO","text_entry":"Long live the king!"}
+{"index":{"_index":"hamlet-1","_id":3}}
+{"line_number":"1.2.1","speaker":"KING CLAUDIUS","text_entry":"Though yet of Hamlet our dear brothers death"}
+# Add some documents to `hamlet-2` by running the following _bulk command
+PUT hamlet-2/_bulk
+{"index":{"_index":"hamlet-2","_id":4}}
+{"line_number":"2.1.1","speaker":"LORD POLONIUS","text_entry":"Give him this money and these notes, Reynaldo."}
+{"index":{"_index":"hamlet-2","_id":5}}
+{"line_number":"2.1.2","speaker":"REYNALDO","text_entry":"I will, my lord."}
+{"index":{"_index":"hamlet-2","_id":6}}
+{"line_number":"2.1.3","speaker":"LORD POLONIUS","text_entry":"You shall do marvellous wisely, good Reynaldo,"}
+{"index":{"_index":"hamlet-2","_id":7}}
+{"line_number":"2.1.4","speaker":"LORD POLONIUS","text_entry":"Before you visit him, to make inquire"}
+
+
+
+POST _aliases
+{
+  "actions": [
+    {
+      "add": {
+        "index": "hamlet-1",
+        "alias": "hamlet",
+        "is_write_index": true
+      }
+    },
+    {
+      "add": {
+        "index": "hamlet-2",
+        "alias": "hamlet"
+      }
+    }
+  ]
+}
+
+
+
+
+GET hamlet/_search
+
+
+
+
+
+PUT hamlet/_doc/8
+{
+  "text_entry": "With turbulent and dangerous lunacy?",
+  "line_number": "3.1.4",
+  "speaker": "KING CLAUDIUS"
+
+}
+
+
+
+
+PUT _scripts/control_reindex_batch
+{
+  "script":{
+    "lang": "painless",
+    "source": """
+      if(ctx._source.reindexBatch !=null)
+      {
+        ctx._source.reindexBatch+=params.increment;
+      }
+      else{
+        ctx._source.reindexBatch= 1;
+      }
+    """
+  }
+}
+
+
+
+
+
+PUT hamlet-new
+{
+  "settings": {
+    "number_of_shards": 2,
+    "number_of_replicas": 0
+  }
+}
+
+
+
+
+POST _reindex
+{
+  "source": {
+    "index": "hamlet"
+  },
+  "dest": {
+    "index": "hamlet-new"
+  },
+  "script":{
+    "id": "control_reindex_batch",
+    "params": {
+      "increment": 1
+    }
+    }
+}
+
+
+
+GET hamlet-new/_search
+
+
+
+POST _aliases
+{
+  "actions": [
+    {
+      "add": {
+        "index": "hamlet-new",
+        "alias": "hamlet"
+      }
+    },
+    {
+      "remove": {
+        "index": "hamlet-2",
+        "alias": "hamlet"
+      }
+    }
+  ]
+}
+
+
+
+PUT _ingest/pipeline/split_act_scene_line
+{
+  "processors": [
+    {
+      "split": {
+        "field": "line_number",
+        "separator": "\\.+",
+        "target_field": "test_field"
+      }
+    },
+    {
+      "script": {
+        "lang": "painless",
+        "source": """
+        ctx.number_act = ctx.test_field[0];
+        ctx.number_scene = ctx.test_field[1];
+        ctx.number_line = ctx.test_field[2];
+        
+        """
+      }
+    },
+    {
+      "remove": {
+        "field": "test_field"
+      }
+    }
+  ]
+}
+
+
+POST /_ingest/pipeline/split_act_scene_line/_simulate
+{
+  "docs":[
+    {
+        "_source": {
+          "line_number": "1.2.3"
+        }
+    }
+    ]
+
+}
+
+
+
+POST hamlet-new/_update_by_query?pipeline=split_act_scene_line
+
+
+
+GET hamlet-new/_search
+
+
+
+
+GET _cat/indices?v
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+GET _cat/indices?v
+
+
+
+
+GET kibana_sample_data_logs/_search
+{
+  "size": 50,
+  "query": {
+    "match": {
+      "message": "Firefox"
+    }
+  }
+
+}
+
+ 
+ 
+ 
+
+GET kibana_sample_data_logs/_search
+{
+  "size": 50,
+  "from": 50, 
+  "query": {
+    "match": {
+      "message": "Firefox"
+    }
+  }
+
+
+}
+
+
+
+
+GET kibana_sample_data_logs/_search
+{
+  "size": 50,
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "match": {
+            "message": "Firefox"
+          }
+        },
+        {
+          "match": {
+            "message": "Kibana"
+          }
+        }
+      ],
+      "minimum_should_match": 1
+    }
+  }
+}
+
+
+
+GET kibana_sample_data_logs/_search
+{
+  "size": 50,
+  "query": {
+    "match": {
+      "message": "Firefox Kibana"
+    }
+  }
+}
+
+
+GET kibana_sample_data_logs/_search
+{
+  "size": 50,
+  "query": {
+    "match": {
+      "message": {
+      
+          "query":"Firefox Kibana 159.64.35.129",
+      
+         "minimum_should_match":2
+    
+      }
+    }
+  }
+}
+
+
+
+
+
+GET kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "match": {
+      "day_of_week": "Monday"
+    }
+  },
+  "sort": [
+    {
+      "products.base_price": {
+        "order": "desc",
+        "mode": "min"
+      }
+    }
+  ]
+}
+
+
+
+
+
+GET kibana_sample_data_logs/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "range": {
+      "response": {
+        "gte": 400,
+        "lt": 500
+      }
+    }
+        },
+        
+        {
+          "match": {
+            "referer": "http://twitter.com/success/guion-bluford"
+          }
+        }
+        
+      ]
+    }
+    
+    
+  }
+
+
+}
+
+
+GET kibana_sample_data_ecommerce/_search
+
+GET kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "exists": {
+      "field": "memory",
+      ""
+    }
+  }
+}
+
+
+
+
+
+GET kibana_sample_data_flights/_search
+{
+  
+  "query": {
+    "multi_match": {
+      "query": "Sidnei",
+      "fields": ["OriginCityName", "DestCityName"],
+      "fuzziness": 2
+      
+    }
+  }
+  
+}
+
+
+
+
+PUT _scripts/with_response_and_tag
+{
+  "script": {
+    "lang": "mustache",
+    "source": {
+      "query": {
+        "bool": {
+          "must": [
+            {
+              "range": {
+                "response": {
+                  "gte": "{{with_min_response}}"
+                  {{#with_max_response}},
+                  "lte": "{{with_max_response}}"
+                  {{/with_max_response}}
+                }
+              }
+            }
+            {{#with_tag}},
+            {
+              "term": {
+                "tags": "{{with_tag}}"
+              }
+            }
+            {{/with_tag}}
+          ]
+        }
+      }
+    }
+  }
+}
+
+
+
+}}
+
+
+
+
+
+
+
+
+
+
