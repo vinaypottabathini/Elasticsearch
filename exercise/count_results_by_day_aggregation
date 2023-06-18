@@ -1,0 +1,49 @@
+
+
+DELETE dayagg
+
+
+POST dayagg/_doc
+{
+          "@timestamp": "2023-06-17T09:08:08.029Z",
+          "qid": "7079B4FEE7",
+          "status": "status_A"
+}
+
+
+POST dayagg/_doc
+{
+          "@timestamp": "2023-06-12T09:08:08.057Z",
+          "qid": "BE5694FEFB",
+          "status": "status_A"
+}
+
+POST dayagg/_doc
+{
+          "@timestamp": "2023-06-12T09:08:08.057Z",
+          "qid": "BE5694FEFB",
+          "status": "status_B"
+}
+
+
+GET dayagg/_search
+{
+  "size": 0,
+  "query": {
+    "range": {
+      "@timestamp": {
+        "gte": "now-31d",
+        "lte": "now-1d"
+      }
+    }
+  },
+  "aggs": {
+    "byDay": {
+      "date_histogram": {
+        "field": "@timestamp",
+        "calendar_interval": "day",
+        "format": "yyyy-MM-dd"
+      }
+    }
+  }
+}
