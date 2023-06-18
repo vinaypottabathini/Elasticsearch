@@ -1,0 +1,78 @@
+
+
+
+PUT /networks?pretty
+{
+  "mappings": {
+    "properties": {
+      "range": { "type": "ip_range" },
+      "name": { "type": "keyword" },
+      "department": { "type": "keyword" }
+    }
+  }
+}
+
+
+DELETE networks
+
+PUT /networks/_doc/1?refresh=wait_for&pretty
+{
+  "range": "2001:db8::/48",
+  "name": "production",
+  "department": "OPS"
+}
+
+PUT /networks/_doc/2?refresh=wait_for&pretty
+{
+  "range": "2001:db8::/48",
+  "name": "testserver",
+  "department": "ORS"
+}
+
+
+
+DELETE /_enrich/policy/networks-policy
+
+PUT /_enrich/policy/networks-policy?pretty
+{
+  "match": {
+    "indices": "networks",
+    "match_field": "range",
+    "enrich_fields": ["name", "department"]
+  }
+}
+
+
+
+POST /_enrich/policy/networks-policy/_execute?pretty
+
+
+DELETE /_ingest/pipeline/networks_lookup
+
+PUT /_ingest/pipeline/networks_lookup
+{
+  "processors" : [
+    {
+      "enrich" : {
+        "description": "Add 'network' data based on 'ip'",
+        "policy_name": "networks-policy",
+        "field" : "ip",
+        "target_field": "network",
+        "max_matches": "10"
+      }
+    }
+  ]
+}
+
+
+DELETE test_networks
+
+
+PUT /test_networks/_doc/my_id?pipeline=networks_lookup&pretty
+{
+  "ip": "2001:db8::/48"
+}
+
+
+
+GET /test_networks/_doc/my_id
