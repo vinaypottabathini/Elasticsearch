@@ -1,0 +1,298 @@
+
+
+GET _render/template
+{
+  "source": """{
+  "query": {
+    "bool": {
+      {{#section}}
+      "should": [
+        {
+          "bool": {
+            "filter": [
+              {{#toJson}}clauses{{/toJson}}
+              ]
+          }
+        }
+      ]
+      {{/section}}
+    }
+  }
+}""",
+  "params": {
+    "section":true, 
+    "clauses": [
+      {
+        "term": {
+          "fieldA": 1
+        }
+      },
+      {
+        "term": {
+          "fieldB": 0
+        }
+      }
+    ]
+  }
+}
+
+
+
+
+
+
+PUT _scripts/clause_script
+{
+  "script": {
+    "lang": "mustache",
+    "source" :  """
+    {
+          "query": {
+            "bool": {
+              {{#section}}
+              "should": [
+                {
+                  "bool": {
+                    "filter": [ {{#toJson}}clauses{{/toJson}} ]
+                      
+                      
+                  }
+                }
+              ]
+              {{/section}}
+            }
+          }
+        }
+        
+      """
+  }
+}
+
+
+
+
+
+
+
+GET stemp/_search/template
+{
+    "id": :"clause_script",
+    "params": {
+      
+    "section":true, 
+  
+    "clauses": [
+      {
+        "match": {
+          "fieldA": "abcd"
+        }
+      },
+      {
+        "match": {
+          "fieldB": 1234
+        }
+      }
+    ]
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+GET _render/template
+{
+  "source": """
+{
+  "query": {
+    "bool": {
+      {{#section}}
+      "should": {{#toJson}}clauses{{/toJson}}
+      {{/section}}
+    }
+  }
+}
+""",
+  "params": {
+  "section":true,
+    "clauses": [
+      {
+        "bool": {
+          "filter": [
+            {
+              "term": {
+                "fieldA": 1
+              }
+            },
+            {
+              "term": {
+                "fieldB": 0
+              }
+            }
+          ]
+        }
+      },
+        {
+          "bool": {
+          "filter": [
+            {
+              "term": {
+                "fieldA": 1
+              }
+            },
+            {
+              "term": {
+                "fieldB": 0
+              }
+            }
+          ]
+        }
+        },
+        {
+          "bool": {
+          "filter": [
+            {
+              "term": {
+                "fieldA": 1
+              }
+            },
+            {
+              "term": {
+                "fieldB": 0
+              }
+            }
+          ]
+        }
+        }
+
+    ]
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+POST stemp/_doc
+{
+  "fieldA": "abcd",
+  "fieldB": 1234
+}
+
+
+
+POST stemp/_doc
+{
+  "fieldA": "efgh",
+  "fieldB": 5678
+}
+
+
+
+POST stemp/_doc
+{
+  "fieldA": "ijkl",
+  "fieldB": 9012
+}
+
+
+
+
+
+
+PUT _scripts/test_script
+{
+  "script":{
+    "lang": "mustache",
+    "source": """
+            {
+        
+              "query": {
+                "bool": {
+                  {{#should_condition}}
+                  "should": [
+                    {
+                      "match": {
+                        "fieldA": "{{fieldA}}"
+                      }
+                    },
+                    {
+                      "match": {
+                        "fieldB": "{{fieldB}}"
+                      }
+                    }
+                  ]
+                  {{/should_condition}}
+                }
+              }
+        
+          }
+    
+    """
+    
+  }
+}
+
+
+
+
+
+
+GET stemp/_search
+{
+  
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "match": {
+            "fieldA": "abcd"
+          }
+        },
+        {
+          "match": {
+            "fieldB": "1234"
+          }
+        }
+      ]
+    }
+  }
+  
+}
+
+
+
+
+
+
+
+
+
+
+GET stemp/_search/template
+{
+  "id": "test_script",
+  "params": {
+    
+      "should_condition": true,
+      "fieldA": "abcd",
+      "fieldB": 1234
+    }
+}
+
+
+GET _scripts/test_script
+
